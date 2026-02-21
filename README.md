@@ -47,12 +47,33 @@ flutter pub get
 
 ### 4. Konfigurasi App
 
-Buka `lib/main.dart` dan ganti:
+#### Opsi A: Menggunakan file .env (Direkomendasikan)
 
-```dart
-const String supabaseUrl = 'YOUR_SUPABASE_URL';
-const String supabaseAnonKey = 'YOUR_SUPABASE_ANON_KEY';
+1. Salin file `.env.example` menjadi `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Edit file `.env` dan isi dengan kredensial Supabase kamu:
+   ```
+   SUPABASE_URL=https://xxxxx.supabase.co
+   SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIs...
+   ```
+
+3. Jalankan aplikasi:
+   ```bash
+   flutter run --dart-define-from-file=.env
+   ```
+
+#### Opsi B: Menggunakan --dart-define langsung
+
+```bash
+flutter run \
+  --dart-define=SUPABASE_URL=https://xxxxx.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIs...
 ```
+
+> ⚠️ **Penting:** Jangan pernah commit file `.env` ke repository. File ini sudah ditambahkan ke `.gitignore`.
 
 ### 5. Setup Google Sign-In (Opsional)
 
@@ -83,8 +104,35 @@ Tambahkan URL scheme di `ios/Runner/Info.plist`.
 ### 6. Jalankan Aplikasi
 
 ```bash
-flutter run
+flutter run --dart-define-from-file=.env
 ```
+
+### 7. Menjalankan di Localhost (WiFi yang Sama)
+
+Jika menggunakan Supabase **self-hosted** di PC dan ingin test di HP:
+
+1. Cari IP address PC kamu:
+   ```bash
+   # Windows
+   ipconfig
+   # Mac/Linux
+   ifconfig
+   ```
+
+2. Gunakan IP lokal (bukan `localhost`) di file `.env`:
+   ```
+   SUPABASE_URL=http://192.168.1.100:54321
+   ```
+   > ⚠️ HTTP hanya aman untuk development lokal. Gunakan HTTPS di production.
+
+3. Pastikan HP dan PC terhubung ke **WiFi yang sama**
+
+4. Jalankan:
+   ```bash
+   flutter run --dart-define-from-file=.env
+   ```
+
+> 💡 Jika menggunakan Supabase Cloud, gunakan URL `https://xxxxx.supabase.co` — tidak perlu setting khusus untuk WiFi.
 
 ## Struktur Folder
 
