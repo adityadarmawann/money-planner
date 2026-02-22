@@ -6,14 +6,12 @@ import '../../../data/models/budget_model.dart';
 import '../../../data/models/budget_item_model.dart';
 import '../../../data/models/category_model.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../widgets/common/sp_card.dart';
 import '../../widgets/common/sp_loading.dart';
 import '../../widgets/common/sp_snackbar.dart';
 import '../../widgets/budget/budget_chart.dart';
-import '../../widgets/budget/budget_progress_bar.dart';
 
 class BudgetDetailScreen extends StatefulWidget {
   const BudgetDetailScreen({super.key});
@@ -120,7 +118,7 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
                             child: LinearProgressIndicator(
                               value: budget.percentageUsed / 100,
                               backgroundColor:
-                                  AppColors.primary.withOpacity(0.2),
+                                  AppColors.primary.withValues(alpha: 0.2),
                               valueColor: AlwaysStoppedAnimation<Color>(
                                 budget.percentageUsed >= 90
                                     ? AppColors.error
@@ -497,7 +495,7 @@ class _AddItemSheetState extends State<_AddItemSheet> {
           const SizedBox(height: 16),
           // Category
           DropdownButtonFormField<CategoryModel>(
-            value: _selectedCategory,
+            initialValue: _selectedCategory,
             hint: const Text('Pilih Kategori'),
             decoration: InputDecoration(
               border: OutlineInputBorder(

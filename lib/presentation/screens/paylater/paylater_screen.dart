@@ -173,7 +173,7 @@ class _PaylaterScreenState extends State<PaylaterScreen> {
             borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
               value: account.usedPercentage / 100,
-              backgroundColor: Colors.white.withOpacity(0.3),
+              backgroundColor: Colors.white.withValues(alpha: 0.3),
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
               minHeight: 6,
             ),

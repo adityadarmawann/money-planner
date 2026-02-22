@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_model.dart';
 import '../../core/errors/app_exception.dart';
@@ -70,7 +71,7 @@ class UserRepository {
       final path = 'avatars/$userId/$fileName';
       await _client.storage.from('avatars').uploadBinary(
             path,
-            bytes,
+            Uint8List.fromList(bytes),
             fileOptions: const FileOptions(upsert: true),
           );
       final url = _client.storage.from('avatars').getPublicUrl(path);

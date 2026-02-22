@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../data/models/transaction_model.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/utils/currency_formatter.dart';
-import '../../core/utils/date_formatter.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/currency_formatter.dart';
+import '../../../core/utils/date_formatter.dart';
 
 class TransactionTile extends StatelessWidget {
   final TransactionModel transaction;
@@ -25,7 +25,7 @@ class TransactionTile extends StatelessWidget {
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: _getColor().withOpacity(0.1),
+          color: _getColor().withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(_getIcon(), color: _getColor(), size: 22),

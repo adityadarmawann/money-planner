@@ -35,7 +35,7 @@ class TransactionDetailScreen extends StatelessWidget {
                     ? LinearGradient(
                         colors: [
                           AppColors.success,
-                          AppColors.success.withOpacity(0.7)
+                          AppColors.success.withValues(alpha: 0.7)
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -43,7 +43,7 @@ class TransactionDetailScreen extends StatelessWidget {
                     : LinearGradient(
                         colors: [
                           AppColors.expense,
-                          AppColors.expense.withOpacity(0.7)
+                          AppColors.expense.withValues(alpha: 0.7)
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,

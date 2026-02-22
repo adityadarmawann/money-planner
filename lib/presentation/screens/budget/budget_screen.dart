@@ -256,7 +256,7 @@ class _BudgetCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(6),
             child: LinearProgressIndicator(
               value: percent / 100,
-              backgroundColor: progressColor.withOpacity(0.15),
+              backgroundColor: progressColor.withValues(alpha: 0.15),
               valueColor: AlwaysStoppedAnimation<Color>(progressColor),
               minHeight: 6,
             ),

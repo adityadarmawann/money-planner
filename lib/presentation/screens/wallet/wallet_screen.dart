@@ -70,7 +70,7 @@ class WalletScreen extends StatelessWidget {
                           icon: const Icon(Icons.send, size: 18),
                           label: const Text('Transfer'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white.withOpacity(0.2),
+                            backgroundColor: Colors.white.withValues(alpha: 0.2),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 10),
                             shape: RoundedRectangleBorder(

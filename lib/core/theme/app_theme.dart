@@ -15,7 +15,6 @@ class AppTheme {
         onPrimary: AppColors.textOnPrimary,
         secondary: AppColors.primaryLight,
         surface: AppColors.background,
-        background: AppColors.background,
       ),
       scaffoldBackgroundColor: AppColors.background,
       textTheme: GoogleFonts.poppinsTextTheme().copyWith(
@@ -153,7 +152,7 @@ class AppTheme {
           fontSize: 14,
         ),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: AppColors.backgroundCard,
         elevation: 0,
         shape: RoundedRectangleBorder(

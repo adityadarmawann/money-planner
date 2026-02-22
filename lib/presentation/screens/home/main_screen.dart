@@ -2,14 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/budget_provider.dart';
-import '../../../providers/transaction_provider.dart';
 import '../../../providers/wallet_provider.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_routes.dart';
 import '../../../core/constants/app_strings.dart';
 import '../home/home_screen.dart';
 import '../budget/budget_screen.dart';
-import '../history/history_screen.dart';
 import '../profile/profile_screen.dart';
 
 class MainScreen extends StatefulWidget {

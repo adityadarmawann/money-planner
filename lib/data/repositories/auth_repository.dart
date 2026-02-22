@@ -1,4 +1,5 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
+import 'package:gotrue/gotrue.dart' as gotrue;
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
 import '../../core/errors/app_exception.dart';
@@ -28,7 +29,7 @@ class AuthRepository {
       );
       if (response.user == null) return null;
       return _fetchUserProfile(response.user!.id);
-    } on AuthException catch (e) {
+    } on gotrue.AuthException catch (e) {
       throw AuthException(
         message: _mapAuthError(e.message),
         code: e.statusCode,
@@ -61,7 +62,7 @@ class AuthRepository {
       }).eq('id', response.user!.id);
 
       return _fetchUserProfile(response.user!.id);
-    } on AuthException catch (e) {
+    } on gotrue.AuthException catch (e) {
       throw AuthException(
         message: _mapAuthError(e.message),
         code: e.statusCode,
@@ -93,7 +94,7 @@ class AuthRepository {
 
       if (response.user == null) return null;
       return _fetchUserProfile(response.user!.id);
-    } on AuthException catch (e) {
+    } on gotrue.AuthException catch (e) {
       throw AuthException(
         message: _mapAuthError(e.message),
         code: e.statusCode,

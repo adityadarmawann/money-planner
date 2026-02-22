@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../data/models/user_model.dart';
-import '../../../data/models/wallet_model.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/wallet_provider.dart';
-import '../../../providers/user_provider.dart';
 import '../../../providers/transaction_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/currency_formatter.dart';
-import '../../../core/utils/validators.dart';
 import '../../../data/repositories/user_repository.dart';
 import '../../../data/repositories/wallet_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';

@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/transaction_provider.dart';
-import '../../../data/models/transaction_model.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../widgets/transaction/transaction_tile.dart';
 import '../../widgets/common/sp_loading.dart';
-import '../../widgets/common/sp_card.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
