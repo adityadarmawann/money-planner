@@ -74,29 +74,16 @@ class AuthRepository {
 
   Future<UserModel?> signInWithGoogle() async {
     try {
-      final googleAccount = await _googleSignIn.authenticate();
-      // ignore: unnecessary_null_comparison
-      if (googleAccount == null) return null;
-
-      final idToken = googleAccount.authentication.idToken;
-      
-      // Request authorization for scopes to get access token
-      final clientAuth = await googleAccount.authorizationClient
-          .authorizationForScopes(['email', 'profile']);
-      final accessToken = clientAuth?.accessToken;
-
-      if (accessToken == null || idToken == null) {
-        throw const AuthException(message: 'Gagal mendapatkan token Google');
-      }
-
-      final response = await _client.auth.signInWithIdToken(
-        provider: OAuthProvider.google,
-        idToken: idToken,
-        accessToken: accessToken,
+      // Use Supabase's built-in OAuth flow - this is the recommended approach
+      // and handles the redirect properly without opening external apps
+      await _client.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: 'com.indonesia.studentplan://login-callback',
       );
-
-      if (response.user == null) return null;
-      return _fetchUserProfile(response.user!.id);
+      
+      // The OAuth flow will redirect, so we return null here
+      // The auth state listener will handle the session once redirected back
+      return null;
     } on AuthException catch (e) {
       throw AuthException(
         message: _mapAuthError(e.message),
