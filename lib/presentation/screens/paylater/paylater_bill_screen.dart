@@ -127,6 +127,7 @@ class _PaylaterBillScreenState extends State<PaylaterBillScreen> {
 
     if (success) {
       await walletProvider.loadWallet(userId);
+      // ignore: use_build_context_synchronously
       showSpSnackbar(context, 'Tagihan berhasil dibayar!', isSuccess: true);
     } else {
       showSpSnackbar(

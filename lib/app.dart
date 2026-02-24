@@ -35,8 +35,8 @@ import 'presentation/screens/budget/budget_detail_screen.dart';
 import 'presentation/screens/history/history_screen.dart';
 import 'presentation/screens/history/transaction_detail_screen.dart';
 
-// Initialize GoogleSignIn once at module level
-final _googleSignIn = GoogleSignIn();
+// Initialize GoogleSignIn instance (singleton pattern)
+final _googleSignIn = GoogleSignIn.instance;
 
 class App extends StatelessWidget {
   const App({super.key});

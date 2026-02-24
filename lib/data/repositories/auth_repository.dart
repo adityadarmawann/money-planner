@@ -1,5 +1,4 @@
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
-import 'package:gotrue/gotrue.dart' as gotrue;
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
 import '../../core/errors/app_exception.dart';
@@ -29,10 +28,10 @@ class AuthRepository {
       );
       if (response.user == null) return null;
       return _fetchUserProfile(response.user!.id);
-    } on gotrue.AuthException catch (e) {
+    } on AuthException catch (e) {
       throw AuthException(
         message: _mapAuthError(e.message),
-        code: e.statusCode,
+        code: e.code,
         originalError: e,
       );
     } catch (e) {
@@ -62,10 +61,10 @@ class AuthRepository {
       }).eq('id', response.user!.id);
 
       return _fetchUserProfile(response.user!.id);
-    } on gotrue.AuthException catch (e) {
+    } on AuthException catch (e) {
       throw AuthException(
         message: _mapAuthError(e.message),
-        code: e.statusCode,
+        code: e.code,
         originalError: e,
       );
     } catch (e) {
@@ -75,12 +74,16 @@ class AuthRepository {
 
   Future<UserModel?> signInWithGoogle() async {
     try {
-      final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null;
+      final googleAccount = await _googleSignIn.authenticate();
+      // ignore: unnecessary_null_comparison
+      if (googleAccount == null) return null;
 
-      final googleAuth = await googleUser.authentication;
-      final accessToken = googleAuth.accessToken;
-      final idToken = googleAuth.idToken;
+      final idToken = googleAccount.authentication.idToken;
+      
+      // Request authorization for scopes to get access token
+      final clientAuth = await googleAccount.authorizationClient
+          .authorizationForScopes(['email', 'profile']);
+      final accessToken = clientAuth?.accessToken;
 
       if (accessToken == null || idToken == null) {
         throw const AuthException(message: 'Gagal mendapatkan token Google');
@@ -94,10 +97,10 @@ class AuthRepository {
 
       if (response.user == null) return null;
       return _fetchUserProfile(response.user!.id);
-    } on gotrue.AuthException catch (e) {
+    } on AuthException catch (e) {
       throw AuthException(
         message: _mapAuthError(e.message),
-        code: e.statusCode,
+        code: e.code,
         originalError: e,
       );
     } catch (e) {

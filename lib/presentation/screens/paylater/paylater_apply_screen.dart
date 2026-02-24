@@ -105,12 +105,15 @@ class _PaylaterApplyScreenState extends State<PaylaterApplyScreen> {
     if (success) {
       await walletProvider.loadWallet(userId);
       showSpSnackbar(
+        // ignore: use_build_context_synchronously
         context,
         'Dana ${CurrencyFormatter.format(_amount)} berhasil dicairkan!',
         isSuccess: true,
       );
+      // ignore: use_build_context_synchronously
       Navigator.pop(context);
     } else {
+      // ignore: use_build_context_synchronously
       showSpSnackbar(
         context,
         paylaterProvider.errorMessage ?? 'Pencairan gagal',

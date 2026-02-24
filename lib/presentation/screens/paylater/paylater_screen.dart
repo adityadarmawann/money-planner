@@ -236,9 +236,11 @@ class _PaylaterScreenState extends State<PaylaterScreen> {
 
     if (success) {
       await walletProvider.loadWallet(userId);
+      // ignore: use_build_context_synchronously
       showSpSnackbar(context, 'Tagihan berhasil dibayar!', isSuccess: true);
     } else {
       showSpSnackbar(
+        // ignore: use_build_context_synchronously
         context,
         paylaterProvider.errorMessage ?? 'Pembayaran gagal',
         isError: true,

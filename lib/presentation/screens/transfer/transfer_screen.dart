@@ -175,6 +175,7 @@ class _UserTransferTabState extends State<_UserTransferTab> {
 
     if (result == true && mounted) {
       await walletProvider.loadWallet(senderId);
+      // ignore: use_build_context_synchronously
       Navigator.pop(context);
     }
   }
@@ -388,6 +389,7 @@ class _BankTransferTabState extends State<_BankTransferTab> {
 
     if (result == true && mounted) {
       await walletProvider.loadWallet(senderId);
+      // ignore: use_build_context_synchronously
       Navigator.pop(context);
     }
   }
@@ -556,6 +558,7 @@ class _QrisTabState extends State<_QrisTab> {
     if (success) {
       await walletProvider.loadWallet(userId);
       Navigator.pushNamed(
+        // ignore: use_build_context_synchronously
         context,
         AppRoutes.transferSuccess,
         arguments: {
@@ -567,6 +570,7 @@ class _QrisTabState extends State<_QrisTab> {
       );
     } else {
       showSpSnackbar(
+        // ignore: use_build_context_synchronously
         context,
         txProvider.errorMessage ?? 'Pembayaran gagal',
         isError: true,

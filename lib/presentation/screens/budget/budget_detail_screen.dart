@@ -367,7 +367,7 @@ class _AddItemSheetState extends State<_AddItemSheet> {
   CategoryModel? _selectedCategory;
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
-  DateTime _date = DateTime.now();
+  final DateTime _date = DateTime.now();
 
   @override
   void dispose() {
