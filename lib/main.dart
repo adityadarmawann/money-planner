@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'app.dart';
 import 'core/config/env_config.dart';
 
@@ -9,6 +10,14 @@ Future<void> main() async {
   if (!EnvConfig.isConfigured) {
     runApp(const _ConfigErrorApp());
     return;
+  }
+
+  // Initialize date formatting for Indonesian locale
+  try {
+    await initializeDateFormatting('id_ID', null);
+  } catch (e) {
+    // Fallback if locale initialization fails
+    debugPrint('Failed to initialize id_ID locale: $e');
   }
 
   await Supabase.initialize(
