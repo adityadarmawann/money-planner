@@ -44,6 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final wallet = context.watch<WalletProvider>().wallet;
     final txProvider = context.watch<TransactionProvider>();
     final recentTx = txProvider.transactions.take(5).toList();
+    final firstName = user?.fullName.split(' ').first ?? 'Pengguna';
 
     return RefreshIndicator(
       onRefresh: _loadData,
@@ -54,9 +55,52 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
+            // Greeting with logo
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Hai, $firstName 👋',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Kelola keuanganmu dengan bijak',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textHint,
+                      ),
+                    ),
+                  ],
+                ),
+                // Small logo in corner
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.account_balance,
+                    color: AppColors.primary,
+                    size: 28,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            // Balance Card
             BalanceCard(
               balance: wallet?.balance ?? 0,
-              userName: user?.fullName.split(' ').first,
+              userName: firstName,
             ),
             const SizedBox(height: 28),
             const Text(
@@ -76,10 +120,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTransfer: () =>
                     Navigator.pushNamed(context, AppRoutes.transfer)
                         .then((_) => _loadData()),
-                onPaylater: () =>
-                    Navigator.pushNamed(context, AppRoutes.paylater),
-                onScan: () =>
+                onRencana: () =>
                   Navigator.pushNamed(context, AppRoutes.expensePlanCalendar),
+                onQris: () =>
+                  Navigator.pushNamed(context, AppRoutes.qrisSimulator),
               ),
             ),
             const SizedBox(height: 28),

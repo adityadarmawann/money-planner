@@ -6,6 +6,7 @@ import '../../../providers/wallet_provider.dart';
 import '../../../core/constants/app_strings.dart';
 import '../home/home_screen.dart';
 import '../budget/budget_screen.dart';
+import '../wallet/wallet_screen.dart';
 import '../profile/profile_screen.dart';
 
 class MainScreen extends StatefulWidget {
@@ -21,6 +22,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = const [
     HomeScreen(),
     BudgetScreen(),
+    WalletScreen(),
     ProfileScreen(),
   ];
 
@@ -51,6 +53,7 @@ class _MainScreenState extends State<MainScreen> {
         onTap: (index) {
           setState(() => _currentIndex = index);
         },
+        type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
@@ -61,6 +64,11 @@ class _MainScreenState extends State<MainScreen> {
             icon: Icon(Icons.pie_chart_outline),
             activeIcon: Icon(Icons.pie_chart),
             label: AppStrings.budget,
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.account_balance_wallet_outlined),
+            activeIcon: Icon(Icons.account_balance_wallet),
+            label: AppStrings.wallet,
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),

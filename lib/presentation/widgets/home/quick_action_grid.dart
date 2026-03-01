@@ -4,15 +4,15 @@ import '../../../core/constants/app_colors.dart';
 class QuickActionGrid extends StatelessWidget {
   final VoidCallback onTopUp;
   final VoidCallback onTransfer;
-  final VoidCallback onPaylater;
-  final VoidCallback onScan;
+  final VoidCallback onRencana;
+  final VoidCallback onQris;
 
   const QuickActionGrid({
     super.key,
     required this.onTopUp,
     required this.onTransfer,
-    required this.onPaylater,
-    required this.onScan,
+    required this.onRencana,
+    required this.onQris,
   });
 
   @override
@@ -33,16 +33,16 @@ class QuickActionGrid extends StatelessWidget {
           onTap: onTransfer,
         ),
         _ActionItem(
-          icon: Icons.credit_card,
-          label: 'Paylater',
-          color: AppColors.warning,
-          onTap: onPaylater,
-        ),
-        _ActionItem(
           icon: Icons.calendar_month_rounded,
           label: 'Rencana',
           color: AppColors.info,
-          onTap: onScan,
+          onTap: onRencana,
+        ),
+        _ActionItem(
+          icon: Icons.qr_code_2_rounded,
+          label: 'QRIS',
+          color: AppColors.warning,
+          onTap: onQris,
         ),
       ],
     );

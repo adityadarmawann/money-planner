@@ -13,6 +13,8 @@ class AppRoutes {
   static const String transfer = '/transfer';
   static const String transferConfirm = '/transfer/confirm';
   static const String transferSuccess = '/transfer/success';
+  static const String qrisSimulator = '/qris/simulator';
+  static const String qrisPayment = '/qris/payment';
   static const String paylater = '/paylater';
   static const String paylaterApply = '/paylater/apply';
   static const String paylaterBill = '/paylater/bill';

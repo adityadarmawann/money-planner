@@ -88,6 +88,11 @@ class TransferConfirmScreen extends StatelessWidget {
                             _DetailRow(
                                 label: 'No. Rekening',
                                 value: args['accountNumber'] as String),
+                          ] else if (type == TransferType.qris) ...[
+                            _DetailRow(
+                              label: 'Merchant',
+                              value: args['merchant'] as String? ?? 'Warung UMKM Indonesia',
+                            ),
                           ],
                           _DetailRow(
                             label: 'Jumlah',
@@ -174,27 +179,35 @@ class TransferConfirmScreen extends StatelessWidget {
         accountNumber: args['accountNumber'] as String,
         note: args['note'] as String?,
       );
+    } else if (type == TransferType.qris) {
+      // For QRIS simulation, just mark as success
+      success = true;
+    }
+
+    if (!context.mounted) return;
+
+    if (success && type != TransferType.qris) {
+      final userId = authProvider.currentUser?.id;
+      if (userId != null) {
+        await walletProvider.loadWallet(userId);
+      }
     }
 
     if (!context.mounted) return;
 
     if (success) {
-      final userId = authProvider.currentUser?.id;
-      if (userId != null) {
-        await walletProvider.loadWallet(userId);
-      }
       Navigator.pushReplacementNamed(
-        // ignore: use_build_context_synchronously
         context,
         AppRoutes.transferSuccess,
         arguments: {
-          'type': type == TransferType.user ? 'user' : 'bank',
+          'type': type == TransferType.user ? 'user' : type == TransferType.bank ? 'bank' : 'qris',
           'amount': amount,
           'refCode': txProvider.lastTransaction?.refCode ?? '',
           if (type == TransferType.user)
             'recipient':
                 (args['recipient'] as UserModel).fullName,
           if (type == TransferType.bank) 'bankName': args['bankName'],
+          if (type == TransferType.qris) 'merchant': args['merchant'] as String? ?? 'Warung UMKM Indonesia',
         },
       );
     } else {

@@ -29,6 +29,8 @@ import 'presentation/screens/wallet/topup_screen.dart';
 import 'presentation/screens/transfer/transfer_screen.dart';
 import 'presentation/screens/transfer/transfer_confirm_screen.dart';
 import 'presentation/screens/transfer/transfer_success_screen.dart';
+import 'presentation/screens/transfer/qris_simulator_screen.dart';
+import 'presentation/screens/transfer/qris_payment_screen.dart';
 import 'presentation/screens/paylater/paylater_screen.dart';
 import 'presentation/screens/paylater/paylater_apply_screen.dart';
 import 'presentation/screens/paylater/paylater_bill_screen.dart';
@@ -112,6 +114,8 @@ class App extends StatelessWidget {
           AppRoutes.transfer: (_) => const TransferScreen(),
           AppRoutes.transferConfirm: (_) => const TransferConfirmScreen(),
           AppRoutes.transferSuccess: (_) => const TransferSuccessScreen(),
+          AppRoutes.qrisSimulator: (_) => const QrisSimulatorScreen(),
+          AppRoutes.qrisPayment: (_) => const QrisPaymentScreen(),
           AppRoutes.paylater: (_) => const PaylaterScreen(),
           AppRoutes.paylaterApply: (_) => const PaylaterApplyScreen(),
           AppRoutes.paylaterBill: (_) => const PaylaterBillScreen(),

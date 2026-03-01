@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/budget_provider.dart';
 import '../../../providers/expense_plan_provider.dart';
@@ -19,6 +20,8 @@ class BudgetScreen extends StatefulWidget {
 }
 
 class _BudgetScreenState extends State<BudgetScreen> {
+  String _selectedPeriod = 'month'; // 'month', 'year', 'custom'
+
   @override
   void initState() {
     super.initState();
@@ -44,6 +47,20 @@ class _BudgetScreenState extends State<BudgetScreen> {
     final expensePlanProvider = context.watch<ExpensePlanProvider>();
     final monthlyPlans = [...expensePlanProvider.expensePlans]
       ..sort((a, b) => a.plannedDate.compareTo(b.plannedDate));
+
+    // Get current period budget
+    final now = DateTime.now();
+    BudgetModel? currentBudget;
+    try {
+      currentBudget = provider.budgets.firstWhere(
+        (b) => b.startDate.isBefore(now) && b.endDate.isAfter(now),
+      );
+    } catch (_) {
+      // If no budget found for current period, use the first one
+      if (provider.budgets.isNotEmpty) {
+        currentBudget = provider.budgets.first;
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -109,6 +126,176 @@ class _BudgetScreenState extends State<BudgetScreen> {
             : ListView(
                 padding: const EdgeInsets.all(20),
                 children: [
+                  // Period Selection & Income/Expense Chart
+                  if (currentBudget != null) ...[
+                    const Text(
+                      'Ringkasan Keuangan',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SpCard(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          // Period Selector
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () {
+                                    setState(() => _selectedPeriod = 'month');
+                                  },
+                                  icon: const Icon(Icons.calendar_today, size: 16),
+                                  label: const Text('Bulan Ini'),
+                                  style: OutlinedButton.styleFrom(
+                                    backgroundColor: _selectedPeriod == 'month'
+                                        ? AppColors.primary.withValues(alpha: 0.1)
+                                        : null,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () {
+                                    setState(() => _selectedPeriod = 'year');
+                                  },
+                                  icon: const Icon(Icons.date_range, size: 16),
+                                  label: const Text('Tahunan'),
+                                  style: OutlinedButton.styleFrom(
+                                    backgroundColor: _selectedPeriod == 'year'
+                                        ? AppColors.primary.withValues(alpha: 0.1)
+                                        : null,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          // Income vs Expense Pie Chart
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      'Pemasukan vs Pengeluaran',
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    SizedBox(
+                                      height: 150,
+                                      child: PieChart(
+                                        PieChartData(
+                                          sections: [
+                                            PieChartSectionData(
+                                              value: currentBudget.totalIncome > 0
+                                                  ? currentBudget.totalIncome
+                                                  : 1,
+                                              color: AppColors.income,
+                                              title: currentBudget.totalIncome > 0
+                                                  ? '${((currentBudget.totalIncome / (currentBudget.totalIncome + currentBudget.totalExpense)) * 100).toStringAsFixed(0)}%'
+                                                  : '0%',
+                                              radius: 50,
+                                              titleStyle: const TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            PieChartSectionData(
+                                              value: currentBudget.totalExpense > 0
+                                                  ? currentBudget.totalExpense
+                                                  : 1,
+                                              color: AppColors.expense,
+                                              title: currentBudget.totalExpense > 0
+                                                  ? '${((currentBudget.totalExpense / (currentBudget.totalIncome + currentBudget.totalExpense)) * 100).toStringAsFixed(0)}%'
+                                                  : '0%',
+                                              radius: 50,
+                                              titleStyle: const TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ],
+                                          borderData: FlBorderData(show: false),
+                                          centerSpaceRadius: 0,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    // Legend
+                                    Column(
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Container(
+                                              width: 12,
+                                              height: 12,
+                                              decoration: BoxDecoration(
+                                                color: AppColors.income,
+                                                borderRadius:
+                                                    BorderRadius.circular(2),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              'Pemasukan: ${CurrencyFormatter.format(currentBudget.totalIncome)}',
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                color: AppColors.textSecondary,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Container(
+                                              width: 12,
+                                              height: 12,
+                                              decoration: BoxDecoration(
+                                                color: AppColors.expense,
+                                                borderRadius:
+                                                    BorderRadius.circular(2),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              'Pengeluaran: ${CurrencyFormatter.format(currentBudget.totalExpense)}',
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                color: AppColors.textSecondary,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
                   if (monthlyPlans.isNotEmpty) ...[
                     const Text(
                       'Rencana Pengeluaran Bulan Ini',
