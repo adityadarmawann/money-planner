@@ -30,13 +30,23 @@ class CurrencyFormatter {
   }
 
   static String formatAsPlainText(double amount) {
-    final formatted = amount.toStringAsFixed(0);
-    final reversed = formatted.split('').reversed.join('');
-    final withDots = reversed
-        .replaceAllMapped(RegExp(r'.{1,3}'), (match) => '${match.group(0)}.')
-        .split('')
-        .reversed
-        .join();
-    return withDots.endsWith('.') ? withDots.substring(0, withDots.length - 1) : withDots;
+    final digits = amount.toStringAsFixed(0);
+    if (digits.isEmpty) return '';
+    
+    // Reverse to process from right to left
+    final reversed = digits.split('').reversed.join('');
+    final buffer = StringBuffer();
+    
+    // Add dots every 3 digits, avoiding leading dot
+    for (int i = 0; i < reversed.length; i++) {
+      if (i > 0 && i % 3 == 0) {
+        buffer.write('.');
+      }
+      buffer.write(reversed[i]);
+    }
+    
+    // Reverse back to original direction
+    final formatted = buffer.toString().split('').reversed.join('');
+    return formatted;
   }
 }
