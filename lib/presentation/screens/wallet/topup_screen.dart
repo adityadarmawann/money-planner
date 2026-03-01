@@ -21,9 +21,20 @@ class _TopupScreenState extends State<TopupScreen> {
   double _selectedAmount = 0;
   final _customController = TextEditingController();
   bool _useCustom = false;
+  String? _selectedSource;
 
   final List<double> _presetAmounts = [
     5000, 25000, 50000, 100000, 250000, 1000000,
+  ];
+
+  final List<String> _topupSources = [
+    'Indomaret',
+    'Alfamart',
+    'VA BNI',
+    'VA Mandiri',
+    'VA BCA',
+    'E-wallet Dana',
+    'E-wallet GoPay',
   ];
 
   @override
@@ -42,6 +53,11 @@ class _TopupScreenState extends State<TopupScreen> {
       return;
     }
 
+    if (_selectedSource == null || _selectedSource!.isEmpty) {
+      showSpSnackbar(context, 'Pilih sumber top up terlebih dahulu', isError: true);
+      return;
+    }
+
     final authProvider = context.read<AuthProvider>();
     final walletProvider = context.read<WalletProvider>();
     final txProvider = context.read<TransactionProvider>();
@@ -55,6 +71,7 @@ class _TopupScreenState extends State<TopupScreen> {
       userId: userId,
       walletId: walletId,
       amount: _finalAmount,
+      note: 'Top Up via $_selectedSource',
     );
 
     if (!mounted) return;
@@ -211,6 +228,53 @@ class _TopupScreenState extends State<TopupScreen> {
                   _selectedAmount = 0;
                 });
               },
+            ),
+            const SizedBox(height: 32),
+            const Text(
+              'Pilih Sumber Top Up',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _topupSources.map((source) {
+                final isSelected = _selectedSource == source;
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedSource = source;
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.backgroundSecondary,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.border,
+                      ),
+                    ),
+                    child: Text(
+                      source,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: isSelected
+                            ? Colors.white
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
             const SizedBox(height: 32),
             SpButton(
