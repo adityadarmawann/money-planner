@@ -79,7 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 onPaylater: () =>
                     Navigator.pushNamed(context, AppRoutes.paylater),
                 onScan: () =>
-                    Navigator.pushNamed(context, AppRoutes.transfer),
+                  Navigator.pushNamed(context, AppRoutes.expensePlanCalendar),
               ),
             ),
             const SizedBox(height: 28),

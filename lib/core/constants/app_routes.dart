@@ -19,6 +19,8 @@ class AppRoutes {
   static const String budget = '/budget';
   static const String budgetCreate = '/budget/create';
   static const String budgetDetail = '/budget/detail';
+  static const String expensePlanCalendar = '/expenseplan/calendar';
+  static const String expensePlanCreate = '/expenseplan/create';
   static const String history = '/history';
   static const String transactionDetail = '/history/detail';
 }

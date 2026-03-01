@@ -51,6 +51,15 @@ class AuthRepository {
         password: password,
         data: {'full_name': fullName, 'username': username},
       );
+      
+      // Check if email confirmation is required
+      if (response.user != null && _client.auth.currentSession == null) {
+        throw AuthException(
+          message: 'Cek email kamu dan lakukan verifikasi untuk melanjutkan',
+          code: 'email_confirmation_required',
+        );
+      }
+      
       if (response.user == null) return null;
 
       // Update user profile with full name and username

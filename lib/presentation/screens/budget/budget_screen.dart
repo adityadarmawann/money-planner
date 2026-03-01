@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/budget_provider.dart';
+import '../../../providers/expense_plan_provider.dart';
 import '../../../data/models/budget_model.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_routes.dart';
@@ -28,20 +29,70 @@ class _BudgetScreenState extends State<BudgetScreen> {
     final userId = context.read<AuthProvider>().currentUser?.id;
     if (userId == null) return;
     final budgetProvider = context.read<BudgetProvider>();
+    final expensePlanProvider = context.read<ExpensePlanProvider>();
+    final now = DateTime.now();
     await Future.wait([
       budgetProvider.loadBudgets(userId),
       budgetProvider.loadCategories(userId: userId),
+      expensePlanProvider.loadExpensePlansForMonth(userId, now.year, now.month),
     ]);
   }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<BudgetProvider>();
+    final expensePlanProvider = context.watch<ExpensePlanProvider>();
+    final monthlyPlans = [...expensePlanProvider.expensePlans]
+      ..sort((a, b) => a.plannedDate.compareTo(b.plannedDate));
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Anggaran Saya'),
         actions: [
+          Consumer<ExpensePlanProvider>(
+            builder: (context, expensePlanProvider, _) {
+              final planCount = expensePlanProvider.expensePlans.length;
+              return IconButton(
+                tooltip: 'Rencana Pengeluaran',
+                onPressed: () => Navigator.pushNamed(
+                  context,
+                  AppRoutes.expensePlanCalendar,
+                ).then((_) => _loadData()),
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(Icons.calendar_month_rounded),
+                    if (planCount > 0)
+                      Positioned(
+                        right: -6,
+                        top: -6,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.error,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 18,
+                            minHeight: 18,
+                          ),
+                          child: Text(
+                            planCount > 99 ? '99+' : '$planCount',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () => Navigator.pushNamed(context, AppRoutes.budgetCreate)
@@ -51,52 +102,94 @@ class _BudgetScreenState extends State<BudgetScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: _loadData,
-        child: provider.isLoading && provider.budgets.isEmpty
+        child: provider.isLoading &&
+                provider.budgets.isEmpty &&
+                monthlyPlans.isEmpty
             ? const SpLoading()
-            : provider.budgets.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.pie_chart_outline,
-                            size: 64, color: AppColors.textHint),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Belum ada anggaran',
-                          style: TextStyle(
-                              color: AppColors.textSecondary, fontSize: 16),
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton.icon(
-                          onPressed: () => Navigator.pushNamed(
-                                  context, AppRoutes.budgetCreate)
-                              .then((_) => _loadData()),
-                          icon: const Icon(Icons.add),
-                          label: const Text('Buat Anggaran'),
-                        ),
-                      ],
+            : ListView(
+                padding: const EdgeInsets.all(20),
+                children: [
+                  if (monthlyPlans.isNotEmpty) ...[
+                    const Text(
+                      'Rencana Pengeluaran Bulan Ini',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.all(20),
-                    itemCount: provider.budgets.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final budget = provider.budgets[index];
-                      return _BudgetCard(
-                        budget: budget,
-                        onTap: () {
-                          provider.selectBudget(budget);
-                          Navigator.pushNamed(
-                            context,
-                            AppRoutes.budgetDetail,
-                            arguments: budget,
-                          ).then((_) => _loadData());
-                        },
-                        onDelete: () => _deleteBudget(budget),
-                      );
-                    },
+                    const SizedBox(height: 12),
+                    ...monthlyPlans.map(
+                      (plan) => Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _ExpensePlanMiniCard(
+                          title: plan.title,
+                          category: plan.category,
+                          paymentSource: plan.paymentSource,
+                          plannedDate: plan.plannedDate,
+                          amount: plan.amount,
+                          isCompleted: plan.isCompleted,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                  ],
+                  const Text(
+                    'Daftar Anggaran',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
+                  const SizedBox(height: 12),
+                  if (provider.budgets.isEmpty)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.pie_chart_outline,
+                                size: 64, color: AppColors.textHint),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Belum ada anggaran',
+                              style: TextStyle(
+                                  color: AppColors.textSecondary, fontSize: 16),
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton.icon(
+                              onPressed: () => Navigator.pushNamed(
+                                      context, AppRoutes.budgetCreate)
+                                  .then((_) => _loadData()),
+                              icon: const Icon(Icons.add),
+                              label: const Text('Buat Anggaran'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    ...provider.budgets.map(
+                      (budget) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _BudgetCard(
+                          budget: budget,
+                          onTap: () {
+                            provider.selectBudget(budget);
+                            Navigator.pushNamed(
+                              context,
+                              AppRoutes.budgetDetail,
+                              arguments: budget,
+                            ).then((_) => _loadData());
+                          },
+                          onDelete: () => _deleteBudget(budget),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () =>
@@ -132,6 +225,91 @@ class _BudgetScreenState extends State<BudgetScreen> {
     if (confirm == true && mounted) {
       await context.read<BudgetProvider>().deleteBudget(budget.id);
     }
+  }
+}
+
+class _ExpensePlanMiniCard extends StatelessWidget {
+  final String title;
+  final String category;
+  final String paymentSource;
+  final DateTime plannedDate;
+  final double amount;
+  final bool isCompleted;
+
+  const _ExpensePlanMiniCard({
+    required this.title,
+    required this.category,
+    required this.paymentSource,
+    required this.plannedDate,
+    required this.amount,
+    required this.isCompleted,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SpCard(
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: isCompleted
+                  ? AppColors.success.withValues(alpha: 0.12)
+                  : AppColors.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              isCompleted ? Icons.check_rounded : Icons.schedule_rounded,
+              color: isCompleted ? AppColors.success : AppColors.primary,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  '${DateFormatter.formatDate(plannedDate)} • $category',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Sumber: $paymentSource',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textHint,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            CurrencyFormatter.format(amount),
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primary,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

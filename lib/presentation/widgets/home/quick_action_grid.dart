@@ -39,8 +39,8 @@ class QuickActionGrid extends StatelessWidget {
           onTap: onPaylater,
         ),
         _ActionItem(
-          icon: Icons.qr_code_scanner,
-          label: 'Scan QR',
+          icon: Icons.calendar_month_rounded,
+          label: 'Rencana',
           color: AppColors.info,
           onTap: onScan,
         ),

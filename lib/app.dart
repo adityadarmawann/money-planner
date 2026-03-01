@@ -10,12 +10,14 @@ import 'data/repositories/wallet_repository.dart';
 import 'data/repositories/transaction_repository.dart';
 import 'data/repositories/budget_repository.dart';
 import 'data/repositories/paylater_repository.dart';
+import 'data/repositories/expense_plan_repository.dart';
 import 'providers/auth_provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/wallet_provider.dart';
 import 'providers/transaction_provider.dart';
 import 'providers/budget_provider.dart';
 import 'providers/paylater_provider.dart';
+import 'providers/expense_plan_provider.dart';
 import 'presentation/screens/auth/splash_screen.dart';
 import 'presentation/screens/auth/onboarding_screen.dart';
 import 'presentation/screens/auth/login_screen.dart';
@@ -32,6 +34,8 @@ import 'presentation/screens/paylater/paylater_apply_screen.dart';
 import 'presentation/screens/paylater/paylater_bill_screen.dart';
 import 'presentation/screens/budget/budget_create_screen.dart';
 import 'presentation/screens/budget/budget_detail_screen.dart';
+import 'presentation/screens/expense_plan/expense_plan_calendar_screen.dart';
+import 'presentation/screens/expense_plan/expense_plan_create_screen.dart';
 import 'presentation/screens/history/history_screen.dart';
 import 'presentation/screens/history/transaction_detail_screen.dart';
 
@@ -61,6 +65,7 @@ class App extends StatelessWidget {
       client: supabase,
       walletRepository: walletRepo,
     );
+    final expensePlanRepo = ExpensePlanRepository(client: supabase);
 
     return MultiProvider(
       providers: [
@@ -85,6 +90,10 @@ class App extends StatelessWidget {
           create: (_) =>
               PaylaterProvider(paylaterRepository: paylaterRepo),
         ),
+        ChangeNotifierProvider(
+          create: (_) =>
+              ExpensePlanProvider(repository: expensePlanRepo),
+        ),
       ],
       child: MaterialApp(
         title: 'Student Plan',
@@ -108,6 +117,8 @@ class App extends StatelessWidget {
           AppRoutes.paylaterBill: (_) => const PaylaterBillScreen(),
           AppRoutes.budgetCreate: (_) => const BudgetCreateScreen(),
           AppRoutes.budgetDetail: (_) => const BudgetDetailScreen(),
+          AppRoutes.expensePlanCalendar: (_) => const ExpensePlanCalendarScreen(),
+          AppRoutes.expensePlanCreate: (_) => const ExpensePlanCreateScreen(),
           AppRoutes.history: (_) => const HistoryScreen(),
           AppRoutes.transactionDetail: (_) =>
               const TransactionDetailScreen(),

@@ -84,6 +84,27 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> deleteAvatar({required String userId}) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _userRepository.deleteAvatar(userId: userId);
+      // Update user model to clear avatar_url
+      if (_user != null) {
+        _user = _user!.copyWith(avatarUrl: null);
+      }
+      return true;
+    } on AppException catch (e) {
+      _errorMessage = e.message;
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   void clearError() {
     _errorMessage = null;
     notifyListeners();

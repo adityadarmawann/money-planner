@@ -55,6 +55,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
       userProvider.setUser(authProvider.currentUser!);
       await walletProvider.loadWallet(authProvider.currentUser!.id);
       if (mounted) Navigator.pushReplacementNamed(context, AppRoutes.home);
+    } else if (authProvider.errorMessage?.toLowerCase().contains('verifikasi') ?? false) {
+      // Email verification required
+      if (mounted) {
+        showSpSnackbar(context, authProvider.errorMessage ?? '', isError: false);
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) Navigator.pushReplacementNamed(context, AppRoutes.login);
+      }
     } else {
       showSpSnackbar(
         context,
