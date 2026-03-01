@@ -397,7 +397,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 24),
           const Text(
-            'Student Plan v1.0.0',
+            'Student Plan v1.6.1',
             style: TextStyle(color: AppColors.textHint, fontSize: 12),
           ),
           const SizedBox(height: 24),

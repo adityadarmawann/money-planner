@@ -59,10 +59,8 @@ class _QrisPaymentScreenState extends State<QrisPaymentScreen> {
         return;
       }
 
-      if (amount > walletProvider.balance) {
-        showSpSnackbar(context, 'Saldo tidak mencukupi', isError: true);
-        return;
-      }
+      // Tidak perlu validasi saldo wallet di sini karena user bisa pilih PayLater
+      // di halaman konfirmasi jika saldo tidak cukup
 
       // Navigate to transfer confirm screen with QRIS type
       Navigator.pushNamed(

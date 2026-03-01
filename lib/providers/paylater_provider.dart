@@ -23,6 +23,9 @@ class PaylaterProvider extends ChangeNotifier {
   List<PaylaterBillModel> get activeBills =>
       _bills.where((b) => b.status == BillStatus.active).toList();
 
+  List<PaylaterBillModel> get overdueBills =>
+      _bills.where((b) => b.status == BillStatus.overdue).toList();
+
   List<PaylaterBillModel> get paidBills =>
       _bills.where((b) => b.status == BillStatus.paid).toList();
 
@@ -121,5 +124,85 @@ class PaylaterProvider extends ChangeNotifier {
   void clearError() {
     _errorMessage = null;
     notifyListeners();
+  }
+
+  Future<bool> payWithPaylaterQris({
+    required String userId,
+    required String walletId,
+    required double amount,
+    required int tenorMonths,
+    required String merchantName,
+    required String merchantCity,
+    String? note,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final result = await _paylaterRepository.payWithPaylaterQris(
+        userId: userId,
+        walletId: walletId,
+        amount: amount,
+        tenorMonths: tenorMonths,
+        merchantName: merchantName,
+        merchantCity: merchantCity,
+        note: note,
+      );
+      final bill = result['bill'] as PaylaterBillModel;
+      _bills.insert(0, bill);
+
+      // Refresh account
+      _account = await _paylaterRepository.getAccount(userId);
+      return true;
+    } on AppException catch (e) {
+      _errorMessage = e.message;
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> payWithPaylaterTransfer({
+    required String userId,
+    required String walletId,
+    required String receiverId,
+    required String receiverWalletId,
+    required double amount,
+    required int tenorMonths,
+    required String receiverUsername,
+    required String receiverFullName,
+    String? note,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final result = await _paylaterRepository.payWithPaylaterTransfer(
+        userId: userId,
+        walletId: walletId,
+        receiverId: receiverId,
+        receiverWalletId: receiverWalletId,
+        amount: amount,
+        tenorMonths: tenorMonths,
+        receiverUsername: receiverUsername,
+        receiverFullName: receiverFullName,
+        note: note,
+      );
+      final bill = result['bill'] as PaylaterBillModel;
+      _bills.insert(0, bill);
+
+      // Refresh account
+      _account = await _paylaterRepository.getAccount(userId);
+      return true;
+    } on AppException catch (e) {
+      _errorMessage = e.message;
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 }

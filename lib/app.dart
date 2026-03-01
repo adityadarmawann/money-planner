@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -69,35 +70,42 @@ class App extends StatelessWidget {
     );
     final expensePlanRepo = ExpensePlanRepository(client: supabase);
 
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(
-          create: (_) => AuthProvider(authRepository: authRepo),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => UserProvider(userRepository: userRepo),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => WalletProvider(walletRepository: walletRepo),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => TransactionProvider(
-            transactionRepository: txRepo,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+      child: MultiProvider(
+        providers: [
+          ChangeNotifierProvider(
+            create: (_) => AuthProvider(authRepository: authRepo),
           ),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => BudgetProvider(budgetRepository: budgetRepo),
-        ),
-        ChangeNotifierProvider(
-          create: (_) =>
-              PaylaterProvider(paylaterRepository: paylaterRepo),
-        ),
-        ChangeNotifierProvider(
-          create: (_) =>
-              ExpensePlanProvider(repository: expensePlanRepo),
-        ),
-      ],
-      child: MaterialApp(
+          ChangeNotifierProvider(
+            create: (_) => UserProvider(userRepository: userRepo),
+          ),
+          ChangeNotifierProvider(
+            create: (_) => WalletProvider(walletRepository: walletRepo),
+          ),
+          ChangeNotifierProvider(
+            create: (_) => TransactionProvider(
+              transactionRepository: txRepo,
+            ),
+          ),
+          ChangeNotifierProvider(
+            create: (_) => BudgetProvider(budgetRepository: budgetRepo),
+          ),
+          ChangeNotifierProvider(
+            create: (_) =>
+                PaylaterProvider(paylaterRepository: paylaterRepo),
+          ),
+          ChangeNotifierProvider(
+            create: (_) =>
+                ExpensePlanProvider(repository: expensePlanRepo),
+          ),
+        ],
+        child: MaterialApp(
         title: 'Student Plan',
         theme: AppTheme.lightTheme,
         debugShowCheckedModeBanner: false,
@@ -127,6 +135,7 @@ class App extends StatelessWidget {
           AppRoutes.transactionDetail: (_) =>
               const TransactionDetailScreen(),
         },
+      ),
       ),
     );
   }

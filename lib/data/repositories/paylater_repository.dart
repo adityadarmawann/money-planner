@@ -194,4 +194,178 @@ class PaylaterRepository {
       throw AppException.fromError(e);
     }
   }
+
+  /// Bayar QRIS dengan PayLater
+  Future<Map<String, dynamic>> payWithPaylaterQris({
+    required String userId,
+    required String walletId,
+    required double amount,
+    required int tenorMonths,
+    required String merchantName,
+    required String merchantCity,
+    String? note,
+  }) async {
+    try {
+      final account = await getAccount(userId);
+      if (account == null) {
+        throw const AppException(message: 'Akun PayLater tidak ditemukan');
+      }
+      if (account.status != PaylaterStatus.active) {
+        throw const AppException(message: 'Akun PayLater tidak aktif');
+      }
+      if (amount > account.remainingLimit) {
+        throw const AppException(
+            message: 'Jumlah melebihi sisa limit PayLater');
+      }
+
+      // Calculate interest
+      final interestAmount = amount * (account.interestRate / 100) * tenorMonths;
+      final totalDue = amount + interestAmount;
+      final dueDate = DateTime.now().add(Duration(days: tenorMonths * 30));
+
+      // Create QRIS transaction with PayLater
+      final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+      final refCode = 'QPL${timestamp.substring(timestamp.length - 8)}';
+
+      final txData = await _client.from('transactions').insert({
+        'sender_id': userId,
+        'wallet_id': walletId,
+        'type': 'qris_paylater',
+        'amount': amount,
+        'fee': 0,
+        'status': 'success',
+        'note': note ?? 'Pembayaran QRIS dengan PayLater ke $merchantName',
+        'ref_code': refCode,
+        'metadata': {
+          'merchant_name': merchantName,
+          'merchant_city': merchantCity,
+          'payment_method': 'paylater',
+        },
+      }).select().single();
+
+      // Create bill
+      final billData = await _client.from('paylater_bills').insert({
+        'paylater_id': account.id,
+        'user_id': userId,
+        'principal_amount': amount,
+        'interest_amount': interestAmount,
+        'total_due': totalDue,
+        'tenor_months': tenorMonths,
+        'due_date': dueDate.toIso8601String().split('T')[0],
+        'status': 'active',
+        'transaction_id': txData['id'],
+        'payment_type': 'qris',
+        'merchant_info': {
+          'merchant_name': merchantName,
+          'merchant_city': merchantCity,
+        },
+      }).select().single();
+
+      // Update used limit
+      await _client
+          .from('paylater_accounts')
+          .update({'used_limit': account.usedLimit + amount})
+          .eq('id', account.id);
+
+      return {
+        'transaction': TransactionModel.fromJson(txData),
+        'bill': PaylaterBillModel.fromJson(billData),
+      };
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw AppException.fromError(e);
+    }
+  }
+
+  /// Transfer ke user dengan PayLater
+  Future<Map<String, dynamic>> payWithPaylaterTransfer({
+    required String userId,
+    required String walletId,
+    required String receiverId,
+    required String receiverWalletId,
+    required double amount,
+    required int tenorMonths,
+    required String receiverUsername,
+    required String receiverFullName,
+    String? note,
+  }) async {
+    try {
+      final account = await getAccount(userId);
+      if (account == null) {
+        throw const AppException(message: 'Akun PayLater tidak ditemukan');
+      }
+      if (account.status != PaylaterStatus.active) {
+        throw const AppException(message: 'Akun PayLater tidak aktif');
+      }
+      if (amount > account.remainingLimit) {
+        throw const AppException(
+            message: 'Jumlah melebihi sisa limit PayLater');
+      }
+
+      // Calculate interest
+      final interestAmount = amount * (account.interestRate / 100) * tenorMonths;
+      final totalDue = amount + interestAmount;
+      final dueDate = DateTime.now().add(Duration(days: tenorMonths * 30));
+
+      // Add balance to receiver's wallet
+      await _walletRepository.addBalance(
+        userId: receiverId,
+        amount: amount,
+      );
+
+      // Create transfer transaction with PayLater
+      final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+      final refCode = 'TPL${timestamp.substring(timestamp.length - 8)}';
+
+      final txData = await _client.from('transactions').insert({
+        'sender_id': userId,
+        'receiver_id': receiverId,
+        'wallet_id': walletId,
+        'type': 'transfer_paylater',
+        'amount': amount,
+        'fee': 0,
+        'status': 'success',
+        'note': note ?? 'Transfer dengan PayLater ke @$receiverUsername',
+        'ref_code': refCode,
+        'metadata': {
+          'receiver_username': receiverUsername,
+          'receiver_full_name': receiverFullName,
+          'payment_method': 'paylater',
+        },
+      }).select().single();
+
+      // Create bill
+      final billData = await _client.from('paylater_bills').insert({
+        'paylater_id': account.id,
+        'user_id': userId,
+        'principal_amount': amount,
+        'interest_amount': interestAmount,
+        'total_due': totalDue,
+        'tenor_months': tenorMonths,
+        'due_date': dueDate.toIso8601String().split('T')[0],
+        'status': 'active',
+        'transaction_id': txData['id'],
+        'payment_type': 'transfer',
+        'recipient_info': {
+          'user_id': receiverId,
+          'username': receiverUsername,
+          'full_name': receiverFullName,
+        },
+      }).select().single();
+
+      // Update used limit
+      await _client
+          .from('paylater_accounts')
+          .update({'used_limit': account.usedLimit + amount})
+          .eq('id', account.id);
+
+      return {
+        'transaction': TransactionModel.fromJson(txData),
+        'bill': PaylaterBillModel.fromJson(billData),
+      };
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw AppException.fromError(e);
+    }
+  }
 }

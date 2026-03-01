@@ -5,20 +5,20 @@ class QuickActionGrid extends StatelessWidget {
   final VoidCallback onTopUp;
   final VoidCallback onTransfer;
   final VoidCallback onRencana;
-  final VoidCallback onQris;
+  final VoidCallback onPayLater;
 
   const QuickActionGrid({
     super.key,
     required this.onTopUp,
     required this.onTransfer,
     required this.onRencana,
-    required this.onQris,
+    required this.onPayLater,
   });
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         _ActionItem(
           icon: Icons.add_circle_outline,
@@ -34,15 +34,15 @@ class QuickActionGrid extends StatelessWidget {
         ),
         _ActionItem(
           icon: Icons.calendar_month_rounded,
-          label: 'Rencana',
+          label: 'My Plan',
           color: AppColors.info,
           onTap: onRencana,
         ),
         _ActionItem(
-          icon: Icons.qr_code_2_rounded,
-          label: 'QRIS',
-          color: AppColors.warning,
-          onTap: onQris,
+          icon: Icons.credit_card,
+          label: 'PayLater',
+          color: AppColors.error,
+          onTap: onPayLater,
         ),
       ],
     );
@@ -69,22 +69,23 @@ class _ActionItem extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: 56,
-            height: 56,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: color, size: 26),
+            child: Icon(icon, color: color, size: 20),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             label,
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w500,
               color: AppColors.textSecondary,
             ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),

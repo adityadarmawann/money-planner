@@ -25,7 +25,7 @@ class AppStrings {
 
   // Navigation
   static const String home = 'Beranda';
-  static const String budget = 'Anggaran';
+  static const String budget = 'MyPlan';
   static const String history = 'Riwayat';
   static const String profile = 'Profil';
 

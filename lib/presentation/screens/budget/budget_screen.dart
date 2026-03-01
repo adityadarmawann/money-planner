@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/budget_provider.dart';
@@ -47,7 +48,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Anggaran Saya'),
+        title: const Text('My Plan'),
         actions: [
           Consumer<ExpensePlanProvider>(
             builder: (context, expensePlanProvider, _) {
@@ -133,6 +134,84 @@ class _BudgetScreenState extends State<BudgetScreen> {
                       ),
                     ),
                     const SizedBox(height: 18),
+                  ],
+                  // Ringkasan Keuangan
+                  if (provider.budgets.isNotEmpty) ...[  
+                    const Text(
+                      'Ringkasan Keuangan',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Builder(
+                      builder: (context) {
+                        final now = DateTime.now();
+                        final currentBudget = provider.budgets.where(
+                          (b) => !b.startDate.isAfter(now) && !b.endDate.isBefore(now),
+                        );
+                        final budget = currentBudget.isNotEmpty
+                            ? currentBudget.first
+                            : provider.budgets.first;
+                        final totalIncome = budget.totalIncome;
+                        final totalExpense = budget.totalExpense;
+                        
+                        return SpCard(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            children: [
+                              SizedBox(
+                                width: 180,
+                                height: 180,
+                                child: PieChart(
+                                  PieChartData(
+                                    sectionsSpace: 3,
+                                    centerSpaceRadius: 50,
+                                    borderData: FlBorderData(show: false),
+                                    sections: [
+                                      PieChartSectionData(
+                                        value: totalIncome > 0 ? totalIncome : 1,
+                                        color: AppColors.income,
+                                        title: '',
+                                        radius: 40,
+                                      ),
+                                      PieChartSectionData(
+                                        value: totalExpense > 0 ? totalExpense : 1,
+                                        color: AppColors.expense,
+                                        title: '',
+                                        radius: 40,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              _SummaryRow(
+                                color: AppColors.income,
+                                label: 'Total Pemasukan',
+                                value: CurrencyFormatter.format(totalIncome),
+                              ),
+                              const SizedBox(height: 12),
+                              _SummaryRow(
+                                color: AppColors.expense,
+                                label: 'Total Pengeluaran',
+                                value: CurrencyFormatter.format(totalExpense),
+                              ),
+                              const Divider(height: 24),
+                              _SummaryRow(
+                                color: AppColors.primary,
+                                label: 'Sisa Saldo',
+                                value: CurrencyFormatter.format(totalIncome - totalExpense),
+                                isTotal: true,
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 24),
                   ],
                   const Text(
                     'Daftar Anggaran',
@@ -450,6 +529,55 @@ class _BudgetCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SummaryRow extends StatelessWidget {
+  final Color color;
+  final String label;
+  final String value;
+  final bool isTotal;
+
+  const _SummaryRow({
+    required this.color,
+    required this.label,
+    required this.value,
+    this.isTotal = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: isTotal ? 14 : 13,
+              fontWeight: isTotal ? FontWeight.w600 : FontWeight.w500,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: isTotal ? 15 : 14,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -17,70 +17,315 @@ import '../../widgets/common/sp_snackbar.dart';
 
 enum TransferType { user, bank, qris }
 
-class TransferScreen extends StatefulWidget {
+class TransferScreen extends StatelessWidget {
   const TransferScreen({super.key});
 
   @override
-  State<TransferScreen> createState() => _TransferScreenState();
-}
-
-class _TransferScreenState extends State<TransferScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final authProvider = context.read<AuthProvider>();
+    final walletProvider = context.watch<WalletProvider>();
+    final user = authProvider.currentUser;
+    final wallet = walletProvider.wallet;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text(AppStrings.transferMoney),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new),
-          onPressed: () => Navigator.pop(context),
-        ),
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textSecondary,
-          indicatorColor: AppColors.primary,
-          tabs: const [
-            Tab(text: 'Pengguna'),
-            Tab(text: 'Bank'),
-            Tab(text: 'QRIS'),
+        title: const Text('Dompet'),
+        elevation: 0,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 1. Saldo Card
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: AppColors.cardGradient,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Saldo Tersedia',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    CurrencyFormatter.format(walletProvider.balance),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // 2. Informasi Dompet (with user full name)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundSecondary,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Informasi Dompet',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _InfoRow(
+                    label: 'Nama Lengkap',
+                    value: user?.fullName ?? 'N/A',
+                  ),
+                  const SizedBox(height: 8),
+                  _InfoRow(
+                    label: 'Username',
+                    value: '@${user?.username ?? 'N/A'}',
+                  ),
+                  const SizedBox(height: 8),
+                  _InfoRow(
+                    label: 'No. Rekening',
+                    value: wallet?.id.substring(0, 8).toUpperCase() ?? 'N/A',
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // 3. Top Up Button
+            SpButton(
+              text: 'Top Up',
+              onPressed: () => Navigator.pushNamed(context, AppRoutes.topup),
+              isOutlined: false,
+            ),
+            const SizedBox(height: 16),
+
+            // 4. Transfer Menu (User & Bank)
+            const Text(
+              'Transfer',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _TransferCard(
+                    icon: Icons.person_outline,
+                    title: 'Pengguna',
+                    subtitle: 'Transfer ke user lain',
+                    color: AppColors.primary,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const _UserTransferScreen(),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _TransferCard(
+                    icon: Icons.account_balance,
+                    title: 'Bank',
+                    subtitle: 'Tarik ke rekening',
+                    color: AppColors.info,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const _BankTransferScreen(),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // 5. PayLater
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundSecondary,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.credit_card, color: AppColors.error),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'PayLater',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const Text(
+                          'Lihat tagihan dan kelola PayLater',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.arrow_forward_ios,
+                        size: 16, color: AppColors.textSecondary),
+                    onPressed: () =>
+                        Navigator.pushNamed(context, AppRoutes.paylater),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: const [
-          _UserTransferTab(),
-          _BankTransferTab(),
-          _QrisTab(),
-        ],
       ),
     );
   }
 }
 
-class _UserTransferTab extends StatefulWidget {
-  const _UserTransferTab();
+// Helper widget for info rows
+class _InfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _InfoRow({required this.label, required this.value});
 
   @override
-  State<_UserTransferTab> createState() => _UserTransferTabState();
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
 }
 
-class _UserTransferTabState extends State<_UserTransferTab> {
+// Helper widget for transfer cards
+class _TransferCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _TransferCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.backgroundSecondary,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                fontSize: 10,
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _UserTransferScreen extends StatefulWidget {
+  const _UserTransferScreen();
+
+  @override
+  State<_UserTransferScreen> createState() => _UserTransferScreenState();
+}
+
+class _UserTransferScreenState extends State<_UserTransferScreen> {
   final _usernameController = TextEditingController();
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
@@ -140,10 +385,8 @@ class _UserTransferTabState extends State<_UserTransferTab> {
       return;
     }
 
-    if (amount > walletProvider.balance) {
-      showSpSnackbar(context, AppStrings.insufficientBalance, isError: true);
-      return;
-    }
+    // Tidak perlu validasi saldo wallet di sini karena user bisa pilih PayLater
+    // di halaman konfirmasi jika saldo tidak cukup
 
     // Get receiver wallet
     final walletRepo = WalletRepository(client: Supabase.instance.client);
@@ -175,6 +418,9 @@ class _UserTransferTabState extends State<_UserTransferTab> {
 
     if (result == true && mounted) {
       await walletProvider.loadWallet(senderId);
+      // Pop twice: once for confirm screen, once for user transfer screen
+      // ignore: use_build_context_synchronously
+      Navigator.pop(context);
       // ignore: use_build_context_synchronously
       Navigator.pop(context);
     }
@@ -182,7 +428,15 @@ class _UserTransferTabState extends State<_UserTransferTab> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Transfer ke Pengguna'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -308,18 +562,19 @@ class _UserTransferTabState extends State<_UserTransferTab> {
           ),
         ],
       ),
+    ),
     );
   }
 }
 
-class _BankTransferTab extends StatefulWidget {
-  const _BankTransferTab();
+class _BankTransferScreen extends StatefulWidget {
+  const _BankTransferScreen();
 
   @override
-  State<_BankTransferTab> createState() => _BankTransferTabState();
+  State<_BankTransferScreen> createState() => _BankTransferScreenState();
 }
 
-class _BankTransferTabState extends State<_BankTransferTab> {
+class _BankTransferScreenState extends State<_BankTransferScreen> {
   String? _selectedBank;
   final _accountController = TextEditingController();
   final _amountController = TextEditingController();
@@ -389,6 +644,9 @@ class _BankTransferTabState extends State<_BankTransferTab> {
 
     if (result == true && mounted) {
       await walletProvider.loadWallet(senderId);
+      // Pop twice: once for confirm screen, once for bank transfer screen
+      // ignore: use_build_context_synchronously
+      Navigator.pop(context);
       // ignore: use_build_context_synchronously
       Navigator.pop(context);
     }
@@ -396,7 +654,15 @@ class _BankTransferTabState extends State<_BankTransferTab> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Transfer ke Bank'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -499,77 +765,7 @@ class _BankTransferTabState extends State<_BankTransferTab> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _QrisTab extends StatelessWidget {
-  const _QrisTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.primaryLightest,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.qr_code_2, 
-                  size: 80, 
-                  color: AppColors.primary
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Scan atau Upload QR Code',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Mulai pembayaran QRIS dengan memilih QR code dari kamera atau galeri',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pushNamed(context, AppRoutes.qrisSimulator);
-              },
-              icon: const Icon(Icons.add_a_photo_outlined),
-              label: const Text('Pilih QR Code'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+    ),
     );
   }
 }

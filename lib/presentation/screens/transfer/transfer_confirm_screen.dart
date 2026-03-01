@@ -3,16 +3,38 @@ import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/wallet_provider.dart';
 import '../../../providers/transaction_provider.dart';
+import '../../../providers/paylater_provider.dart';
 import '../../../data/models/user_model.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../widgets/common/sp_button.dart';
 import '../../widgets/common/sp_snackbar.dart';
+import '../../widgets/payment/payment_method_selector.dart';
 import 'transfer_screen.dart';
 
-class TransferConfirmScreen extends StatelessWidget {
+class TransferConfirmScreen extends StatefulWidget {
   const TransferConfirmScreen({super.key});
+
+  @override
+  State<TransferConfirmScreen> createState() => _TransferConfirmScreenState();
+}
+
+class _TransferConfirmScreenState extends State<TransferConfirmScreen> {
+  PaymentMethod _paymentMethod = PaymentMethod.wallet;
+  int _selectedTenor = 3;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadPayLaterAccount());
+  }
+
+  Future<void> _loadPayLaterAccount() async {
+    final userId = context.read<AuthProvider>().currentUser?.id;
+    if (userId == null) return;
+    await context.read<PaylaterProvider>().loadAccount(userId);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +45,15 @@ class TransferConfirmScreen extends StatelessWidget {
     final fee = (args['fee'] as double?) ?? 0;
     final note = args['note'] as String? ?? '';
 
-    final isLoading = context.watch<TransactionProvider>().isLoading;
+    final isLoading = context.watch<TransactionProvider>().isLoading ||
+        context.watch<PaylaterProvider>().isLoading;
+    final walletBalance = context.watch<WalletProvider>().balance;
+    final paylaterAccount = context.watch<PaylaterProvider>().account;
+    final paylaterLimit = paylaterAccount?.remainingLimit ?? 0;
+    final interestRate = paylaterAccount?.interestRate ?? 2.5;
+
+    // Bank transfer hanya bisa pakai wallet (withdrawal)
+    final canUsePayLater = type == TransferType.user || type == TransferType.qris;
 
     return Scaffold(
       appBar: AppBar(
@@ -49,8 +79,13 @@ class TransferConfirmScreen extends StatelessWidget {
                         color: AppColors.primaryLightest,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.send_rounded,
-                          size: 36, color: AppColors.primary),
+                      child: Icon(
+                        type == TransferType.qris
+                            ? Icons.qr_code_2_rounded
+                            : Icons.send_rounded,
+                        size: 36,
+                        color: AppColors.primary,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -126,13 +161,32 @@ class TransferConfirmScreen extends StatelessWidget {
                         ],
                       ),
                     ),
+                    const SizedBox(height: 24),
+                    // Payment Method Selector (hanya untuk user transfer & QRIS)
+                    if (canUsePayLater)
+                      PaymentMethodSelector(
+                        selectedMethod: _paymentMethod,
+                        selectedTenor: _selectedTenor,
+                        amount: amount + fee,
+                        walletBalance: walletBalance,
+                        paylaterLimit: paylaterLimit,
+                        interestRate: interestRate,
+                        onMethodChanged: (method) {
+                          setState(() => _paymentMethod = method);
+                        },
+                        onTenorChanged: (tenor) {
+                          setState(() => _selectedTenor = tenor);
+                        },
+                      ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 16),
             SpButton(
-              text: 'Konfirmasi & Transfer',
+              text: _paymentMethod == PaymentMethod.paylater
+                  ? 'Bayar dengan PayLater'
+                  : 'Konfirmasi & Transfer',
               onPressed: () => _processTransfer(context, args, type),
               isLoading: isLoading,
             ),
@@ -154,39 +208,69 @@ class TransferConfirmScreen extends StatelessWidget {
     TransferType type,
   ) async {
     final txProvider = context.read<TransactionProvider>();
+    final paylaterProvider = context.read<PaylaterProvider>();
     final walletProvider = context.read<WalletProvider>();
     final authProvider = context.read<AuthProvider>();
     final amount = args['amount'] as double;
     final fee = (args['fee'] as double?) ?? 0;
     bool success = false;
 
-    if (type == TransferType.user) {
-      success = await txProvider.transfer(
-        senderId: args['senderId'] as String,
-        senderWalletId: args['senderWalletId'] as String,
-        receiverId: args['receiverId'] as String,
-        receiverWalletId: args['receiverWalletId'] as String,
-        amount: amount,
-        note: args['note'] as String?,
-      );
-    } else if (type == TransferType.bank) {
-      success = await txProvider.bankTransfer(
-        userId: args['senderId'] as String,
-        walletId: args['senderWalletId'] as String,
-        amount: amount,
-        fee: fee,
-        bankName: args['bankName'] as String,
-        accountNumber: args['accountNumber'] as String,
-        note: args['note'] as String?,
-      );
-    } else if (type == TransferType.qris) {
-        // Process QRIS payment
+    // Gunakan PayLater jika dipilih (hanya untuk QRIS dan User Transfer)
+    if (_paymentMethod == PaymentMethod.paylater) {
+      if (type == TransferType.qris) {
+        final merchantName = args['merchant'] as String? ?? 'Warung UMKM Indonesia';
+        success = await paylaterProvider.payWithPaylaterQris(
+          userId: args['senderId'] as String,
+          walletId: args['senderWalletId'] as String,
+          amount: amount,
+          tenorMonths: _selectedTenor,
+          merchantName: merchantName,
+          merchantCity: 'N/A',
+        );
+      } else if (type == TransferType.user) {
+        final recipient = args['recipient'] as UserModel;
+        success = await paylaterProvider.payWithPaylaterTransfer(
+          userId: args['senderId'] as String,
+          walletId: args['senderWalletId'] as String,
+          receiverId: args['receiverId'] as String,
+          receiverWalletId: args['receiverWalletId'] as String,
+          amount: amount,
+          tenorMonths: _selectedTenor,
+          receiverUsername: recipient.username,
+          receiverFullName: recipient.fullName,
+          note: args['note'] as String?,
+        );
+      }
+    } 
+    // Gunakan wallet (default)
+    else {
+      if (type == TransferType.user) {
+        success = await txProvider.transfer(
+          senderId: args['senderId'] as String,
+          senderWalletId: args['senderWalletId'] as String,
+          receiverId: args['receiverId'] as String,
+          receiverWalletId: args['receiverWalletId'] as String,
+          amount: amount,
+          note: args['note'] as String?,
+        );
+      } else if (type == TransferType.bank) {
+        success = await txProvider.bankTransfer(
+          userId: args['senderId'] as String,
+          walletId: args['senderWalletId'] as String,
+          amount: amount,
+          fee: fee,
+          bankName: args['bankName'] as String,
+          accountNumber: args['accountNumber'] as String,
+          note: args['note'] as String?,
+        );
+      } else if (type == TransferType.qris) {
         success = await txProvider.qrisPayment(
           userId: args['senderId'] as String,
           walletId: args['senderWalletId'] as String,
           amount: amount,
           merchantName: args['merchant'] as String? ?? 'Warung UMKM Indonesia',
         );
+      }
     }
 
     if (!context.mounted) return;
@@ -207,7 +291,11 @@ class TransferConfirmScreen extends StatelessWidget {
         arguments: {
           'type': type == TransferType.user ? 'user' : type == TransferType.bank ? 'bank' : 'qris',
           'amount': amount,
-          'refCode': txProvider.lastTransaction?.refCode ?? '',
+          'refCode': _paymentMethod == PaymentMethod.paylater 
+            ? 'PL-${paylaterProvider.bills.first.id.substring(0, 8).toUpperCase()}' 
+            : txProvider.lastTransaction?.refCode ?? '',
+          'paymentMethod': _paymentMethod == PaymentMethod.paylater ? 'paylater' : 'wallet',
+          'tenor': _paymentMethod == PaymentMethod.paylater ? _selectedTenor : null,
           if (type == TransferType.user)
             'recipient':
                 (args['recipient'] as UserModel).fullName,

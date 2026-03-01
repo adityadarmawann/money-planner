@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/budget_provider.dart';
@@ -6,7 +7,8 @@ import '../../../providers/wallet_provider.dart';
 import '../../../core/constants/app_strings.dart';
 import '../home/home_screen.dart';
 import '../budget/budget_screen.dart';
-import '../wallet/wallet_screen.dart';
+import '../transfer/transfer_screen.dart';
+import '../transfer/qris_camera_screen.dart';
 import '../profile/profile_screen.dart';
 
 class MainScreen extends StatefulWidget {
@@ -22,7 +24,8 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = const [
     HomeScreen(),
     BudgetScreen(),
-    WalletScreen(),
+    QrisCameraScreen(),
+    TransferScreen(),
     ProfileScreen(),
   ];
 
@@ -54,23 +57,39 @@ class _MainScreenState extends State<MainScreen> {
           setState(() => _currentIndex = index);
         },
         type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
+        selectedLabelStyle: GoogleFonts.poppins(
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+          color: Colors.black87,
+        ),
+        unselectedLabelStyle: GoogleFonts.poppins(
+          fontWeight: FontWeight.w400,
+          fontSize: 12,
+          color: Colors.black54,
+        ),
+        items: [
+          const BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
             activeIcon: Icon(Icons.home),
             label: AppStrings.home,
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.pie_chart_outline),
             activeIcon: Icon(Icons.pie_chart),
             label: AppStrings.budget,
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.qr_code_2, size: 28),
+            activeIcon: Icon(Icons.qr_code_2, size: 28),
+            label: 'QRIS',
+            tooltip: 'Scan QRIS',
+          ),
+          const BottomNavigationBarItem(
             icon: Icon(Icons.account_balance_wallet_outlined),
             activeIcon: Icon(Icons.account_balance_wallet),
             label: AppStrings.wallet,
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
             activeIcon: Icon(Icons.person),
             label: AppStrings.profile,

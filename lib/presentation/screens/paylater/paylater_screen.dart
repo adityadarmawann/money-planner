@@ -9,7 +9,6 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
-import '../../widgets/common/sp_button.dart';
 import '../../widgets/common/sp_card.dart';
 import '../../widgets/common/sp_loading.dart';
 import '../../widgets/common/sp_snackbar.dart';
@@ -67,39 +66,63 @@ class _PaylaterScreenState extends State<PaylaterScreen> {
               // Account card
               if (account != null) _buildAccountCard(account),
               const SizedBox(height: 24),
-              // Action buttons
-              if (account?.status == PaylaterStatus.active) ...[
-                Row(
+              
+              // Info panel - PayLater sebagai metode pembayaran
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.backgroundSecondary,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
                   children: [
-                    Expanded(
-                      child: SpButton(
-                        text: 'Cairkan Dana',
-                        onPressed: () =>
-                            Navigator.pushNamed(context, AppRoutes.paylaterApply)
-                                .then((_) => _loadData()),
-                      ),
-                    ),
+                    const Icon(Icons.info_outline, color: AppColors.primary, size: 20),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: SpButton(
-                        text: 'Lihat Tagihan',
-                        onPressed: () =>
-                            Navigator.pushNamed(context, AppRoutes.paylaterBill)
-                                .then((_) => _loadData()),
-                        isOutlined: true,
+                      child: Text(
+                        'PayLater dapat digunakan saat melakukan pembayaran QRIS atau transfer',
+                        style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
                       ),
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(height: 24),
+              
+              // Overdue Bills (prioritas tertinggi)
+              if (provider.overdueBills.isNotEmpty) ...[
+                const Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      'Tagihan Terlambat',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.error,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ...provider.overdueBills.map(
+                  (bill) => _BillCard(
+                    bill: bill,
+                    onPay: () => _payBill(context, bill),
+                  ),
+                ),
                 const SizedBox(height: 24),
               ],
-              // Bills
+              
+              // Active Bills (belum jatuh tempo)
               const Text(
                 'Tagihan Aktif',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 12),
-              if (provider.activeBills.isEmpty)
+              if (provider.activeBills.isEmpty && provider.overdueBills.isEmpty)
                 SpCard(
                   child: const Center(
                     child: Padding(
@@ -125,6 +148,29 @@ class _PaylaterScreenState extends State<PaylaterScreen> {
                     onPay: () => _payBill(context, bill),
                   ),
                 ),
+              
+              // Paid Bills (history)
+              if (provider.paidBills.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                const Text(
+                  'Riwayat Pembayaran',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 12),
+                ...provider.paidBills.take(5).map(
+                  (bill) => _BillCard(
+                    bill: bill,
+                    onPay: null, // tidak bisa bayar lagi
+                  ),
+                ),
+                if (provider.paidBills.length > 5) ...[
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () => Navigator.pushNamed(context, AppRoutes.paylaterBill),
+                    child: const Text('Lihat Semua Riwayat'),
+                  ),
+                ],
+              ],
             ],
           ),
         ),
@@ -183,6 +229,97 @@ class _PaylaterScreenState extends State<PaylaterScreen> {
             'Terpakai ${account.usedPercentage.toStringAsFixed(0)}% | Bunga ${account.interestRate}%/bulan',
             style: const TextStyle(color: Colors.white70, fontSize: 11),
           ),
+          
+          // Limit Increase Progress Tracker
+          if (!account.isMaxLimit) ...[
+            const SizedBox(height: 16),
+            Container(
+              height: 1,
+              color: Colors.white.withValues(alpha: 0.2),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Icon(Icons.trending_up, color: Colors.white, size: 16),
+                const SizedBox(width: 8),
+                const Text(
+                  'Progress Kenaikan Limit',
+                  style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Progress bar untuk 3 pembayaran
+                      Row(
+                        children: List.generate(3, (index) {
+                          final isCompleted = index < account.onTimePaymentCount;
+                          return Expanded(
+                            child: Container(
+                              margin: EdgeInsets.only(right: index < 2 ? 4 : 0),
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: isCompleted 
+                                  ? Colors.white 
+                                  : Colors.white.withValues(alpha: 0.3),
+                                borderRadius: BorderRadius.circular(3),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        account.onTimePaymentCount == 0
+                          ? 'Bayar 3x tepat waktu untuk naik Rp 500rb'
+                          : '${account.paymentsNeededForIncrease}x lagi bayar tepat waktu → Rp ${CurrencyFormatter.formatAsPlainText(account.creditLimit + 500000)}',
+                        style: const TextStyle(color: Colors.white70, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Total dibayar: ${account.totalPaidBills}x',
+                  style: const TextStyle(color: Colors.white60, fontSize: 10),
+                ),
+                Text(
+                  'Target max: Rp 10jt',
+                  style: const TextStyle(color: Colors.white60, fontSize: 10),
+                ),
+              ],
+            ),
+          ] else ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.verified, color: Colors.white, size: 16),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Limit Maksimal Tercapai! 🎉',
+                    style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -273,13 +410,15 @@ class _LimitInfo extends StatelessWidget {
 
 class _BillCard extends StatelessWidget {
   final PaylaterBillModel bill;
-  final VoidCallback onPay;
+  final VoidCallback? onPay; // Nullable untuk bill yang sudah dibayar
 
-  const _BillCard({required this.bill, required this.onPay});
+  const _BillCard({required this.bill, this.onPay});
 
   @override
   Widget build(BuildContext context) {
     final isOverdue = bill.isOverdue;
+    final isPaid = bill.status == BillStatus.paid;
+    
     return SpCard(
       margin: const EdgeInsets.only(bottom: 12),
       child: Column(
@@ -310,13 +449,21 @@ class _BillCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: isOverdue ? AppColors.errorLight : AppColors.warningLight,
+                  color: isPaid 
+                    ? AppColors.successLight 
+                    : isOverdue 
+                      ? AppColors.errorLight 
+                      : AppColors.warningLight,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  isOverdue ? 'Telat' : 'Aktif',
+                  isPaid ? 'Lunas' : isOverdue ? 'Telat' : 'Aktif',
                   style: TextStyle(
-                    color: isOverdue ? AppColors.error : AppColors.warning,
+                    color: isPaid 
+                      ? AppColors.success 
+                      : isOverdue 
+                        ? AppColors.error 
+                        : AppColors.warning,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -347,21 +494,29 @@ class _BillCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Jatuh Tempo: ${DateFormatter.formatDate(bill.dueDate)}',
+                isPaid 
+                  ? 'Dibayar: ${DateFormatter.formatDate(bill.paidAt ?? bill.dueDate)}'
+                  : 'Jatuh Tempo: ${DateFormatter.formatDate(bill.dueDate)}',
                 style: TextStyle(
                   fontSize: 12,
-                  color: isOverdue ? AppColors.error : AppColors.textSecondary,
+                  color: isPaid 
+                    ? AppColors.success 
+                    : isOverdue 
+                      ? AppColors.error 
+                      : AppColors.textSecondary,
                   fontWeight: isOverdue ? FontWeight.w600 : FontWeight.normal,
                 ),
               ),
-              ElevatedButton(
-                onPressed: onPay,
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(80, 36),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+              // Hanya tampilkan tombol bayar jika belum dibayar
+              if (!isPaid && onPay != null)
+                ElevatedButton(
+                  onPressed: onPay,
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(80, 36),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                  ),
+                  child: const Text('Bayar', style: TextStyle(fontSize: 12)),
                 ),
-                child: const Text('Bayar', style: TextStyle(fontSize: 12)),
-              ),
             ],
           ),
         ],
