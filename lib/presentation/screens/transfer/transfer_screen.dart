@@ -503,145 +503,70 @@ class _BankTransferTabState extends State<_BankTransferTab> {
   }
 }
 
-class _QrisTab extends StatefulWidget {
+class _QrisTab extends StatelessWidget {
   const _QrisTab();
 
   @override
-  State<_QrisTab> createState() => _QrisTabState();
-}
-
-class _QrisTabState extends State<_QrisTab> {
-  final _merchantController = TextEditingController();
-  final _amountController = TextEditingController();
-
-  @override
-  void dispose() {
-    _merchantController.dispose();
-    _amountController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _pay() async {
-    final merchant = _merchantController.text.trim();
-    final amount = CurrencyFormatter.parse(_amountController.text);
-
-    if (merchant.isEmpty) {
-      showSpSnackbar(context, 'Masukkan nama merchant', isError: true);
-      return;
-    }
-    if (amount <= 0) {
-      showSpSnackbar(context, 'Masukkan jumlah pembayaran', isError: true);
-      return;
-    }
-
-    final authProvider = context.read<AuthProvider>();
-    final walletProvider = context.read<WalletProvider>();
-    final txProvider = context.read<TransactionProvider>();
-    final userId = authProvider.currentUser?.id;
-    final walletId = walletProvider.wallet?.id;
-
-    if (userId == null || walletId == null) return;
-    if (amount > walletProvider.balance) {
-      showSpSnackbar(context, AppStrings.insufficientBalance, isError: true);
-      return;
-    }
-
-    final success = await txProvider.qrisPayment(
-      userId: userId,
-      walletId: walletId,
-      amount: amount,
-      merchantName: merchant,
-    );
-
-    if (!mounted) return;
-
-    if (success) {
-      await walletProvider.loadWallet(userId);
-      Navigator.pushNamed(
-        // ignore: use_build_context_synchronously
-        context,
-        AppRoutes.transferSuccess,
-        arguments: {
-          'type': 'qris',
-          'merchant': merchant,
-          'amount': amount,
-          'refCode': txProvider.lastTransaction?.refCode ?? '',
-        },
-      );
-    } else {
-      showSpSnackbar(
-        // ignore: use_build_context_synchronously
-        context,
-        txProvider.errorMessage ?? 'Pembayaran gagal',
-        isError: true,
-      );
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final isLoading = context.watch<TransactionProvider>().isLoading;
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            height: 200,
-            width: 200,
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppColors.backgroundSecondary,
+              color: AppColors.primaryLightest,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppColors.border),
             ),
-            child: const Column(
+            child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.qr_code_2, size: 100, color: AppColors.primary),
-                SizedBox(height: 8),
+                const Icon(Icons.qr_code_2, 
+                  size: 80, 
+                  color: AppColors.primary
+                ),
+                const SizedBox(height: 16),
                 Text(
-                  'Simulasi QR Code',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                  'Scan atau Upload QR Code',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Mulai pembayaran QRIS dengan memilih QR code dari kamera atau galeri',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
-          SpTextField(
-            label: 'Nama Merchant',
-            hint: 'Contoh: Kantin Kampus',
-            controller: _merchantController,
-            prefix: const Icon(Icons.store_outlined, color: AppColors.textHint),
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _amountController,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: 'Jumlah Pembayaran',
-              prefixText: 'Rp ',
-              hintText: '0',
-              filled: true,
-              fillColor: AppColors.backgroundSecondary,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.border),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.border),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.primary),
+          const SizedBox(height: 32),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pushNamed(context, AppRoutes.qrisSimulator);
+              },
+              icon: const Icon(Icons.add_a_photo_outlined),
+              label: const Text('Pilih QR Code'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 32),
-          SpButton(
-            text: 'Bayar Sekarang',
-            onPressed: _pay,
-            isLoading: isLoading,
           ),
         ],
       ),
