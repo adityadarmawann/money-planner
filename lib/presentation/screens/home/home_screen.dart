@@ -80,19 +80,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
-                // Small logo in corner
-                Container(
+                // StudentPlan logo
+                Image.asset(
+                  'assets/images/logo-StudentPlan.png',
                   width: 48,
                   height: 48,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.account_balance,
-                    color: AppColors.primary,
-                    size: 28,
-                  ),
+                  fit: BoxFit.contain,
                 ),
               ],
             ),
