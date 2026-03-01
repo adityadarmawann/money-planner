@@ -235,46 +235,41 @@ class _TopupScreenState extends State<TopupScreen> {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _topupSources.map((source) {
-                final isSelected = _selectedSource == source;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedSource = source;
-                    });
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.primary
-                          : AppColors.backgroundSecondary,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: isSelected
-                            ? AppColors.primary
-                            : AppColors.border,
-                      ),
-                    ),
-                    child: Text(
-                      source,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: isSelected
-                            ? Colors.white
-                            : AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
+            DropdownButtonFormField<String>(
+              initialValue: _selectedSource,
+              decoration: InputDecoration(
+                hintText: 'Pilih sumber top up',
+                filled: true,
+                fillColor: AppColors.backgroundSecondary,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppColors.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppColors.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppColors.primary),
+                ),
+              ),
+              items: _topupSources.map((source) {
+                return DropdownMenuItem<String>(
+                  value: source,
+                  child: Text(source),
                 );
               }).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() {
+                    _selectedSource = value;
+                  });
+                }
+              },
+              icon: const Icon(Icons.expand_more, color: AppColors.primary),
+              dropdownColor: AppColors.backgroundSecondary,
+              isExpanded: true,
             ),
             const SizedBox(height: 32),
             SpButton(
