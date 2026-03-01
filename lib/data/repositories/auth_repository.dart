@@ -78,7 +78,7 @@ class AuthRepository {
       // and handles the redirect properly without opening external apps
       await _client.auth.signInWithOAuth(
         OAuthProvider.google,
-        redirectTo: 'com.indonesia.studentplan://login-callback',
+        redirectTo: 'io.supabase.studentplan://login-callback',
       );
       
       // The OAuth flow will redirect, so we return null here
