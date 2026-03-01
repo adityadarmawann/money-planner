@@ -90,11 +90,12 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // For OAuth flow, we launch it and return true if successful
-      // The actual user will be set through the auth state listener
+      // For OAuth flow, we launch it
       await _authRepository.signInWithGoogle();
-      // OAuth flow was launched successfully, keep loading state
-      // The auth state listener will handle setting the user
+      // OAuth flow was launched successfully
+      // Reset loading state - the auth state listener will handle the redirect
+      _status = AuthStatus.unauthenticated;
+      notifyListeners();
       return true;
     } on AppException catch (e) {
       _status = AuthStatus.error;

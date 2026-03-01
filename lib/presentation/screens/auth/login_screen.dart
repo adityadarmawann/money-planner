@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/wallet_provider.dart';
 import '../../../providers/user_provider.dart';
@@ -24,10 +25,50 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _setupAuthListener();
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  void _setupAuthListener() {
+    // Listen untuk auth state changes (e.g., dari Google OAuth redirect)
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
+      if (!mounted) return;
+      
+      final session = data.session;
+      if (session != null) {
+        // User berhasil login, load user data dan navigate ke home
+        try {
+          final userProvider = context.read<UserProvider>();
+          final authProvider = context.read<AuthProvider>();
+          final walletProvider = context.read<WalletProvider>();
+          
+          await userProvider.loadUser(session.user.id);
+          if (userProvider.user != null) {
+            authProvider.setUser(userProvider.user);
+            await walletProvider.loadWallet(session.user.id);
+            if (mounted) {
+              Navigator.pushReplacementNamed(context, AppRoutes.home);
+            }
+          }
+        } catch (e) {
+          if (mounted) {
+            showSpSnackbar(
+              context,
+              'Gagal load user data: ${e.toString()}',
+              isError: true,
+            );
+          }
+        }
+      }
+    });
   }
 
   Future<void> _login() async {
@@ -62,15 +103,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!mounted) return;
 
-    if (success && authProvider.currentUser != null) {
-      final userProvider = context.read<UserProvider>();
-      final walletProvider = context.read<WalletProvider>();
-      userProvider.setUser(authProvider.currentUser!);
-      await walletProvider.loadWallet(authProvider.currentUser!.id);
-      if (mounted) Navigator.pushReplacementNamed(context, AppRoutes.home);
-    } else if (authProvider.errorMessage != null) {
+    // Google OAuth adalah async flow dengan redirect
+    // Jangan menunggu currentUser di sini
+    // Auth state listener akan handle redirect dan update secara otomatis
+    if (!success && authProvider.errorMessage != null) {
       showSpSnackbar(context, authProvider.errorMessage!, isError: true);
     }
+    // Jika success=true, OAuth flow sudah di-launch
+    // User akan di-redirect, dan auth state akan update otomatis
   }
 
   @override

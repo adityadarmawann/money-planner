@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'package:provider/provider.dart';
+import '../../../providers/auth_provider.dart';
+import '../../../providers/wallet_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../core/utils/currency_formatter.dart';
@@ -40,9 +43,24 @@ class _QrisPaymentScreenState extends State<QrisPaymentScreen> {
     }
 
     try {
-      final amount = double.parse(amountText);
+      final authProvider = context.read<AuthProvider>();
+      final walletProvider = context.read<WalletProvider>();
+      final senderId = authProvider.currentUser?.id;
+      final senderWalletId = walletProvider.wallet?.id;
+
+      if (senderId == null || senderWalletId == null) {
+        showSpSnackbar(context, 'Data wallet tidak ditemukan', isError: true);
+        return;
+      }
+
+      final amount = CurrencyFormatter.parse(amountText);
       if (amount <= 0) {
         showSpSnackbar(context, 'Jumlah harus lebih dari 0', isError: true);
+        return;
+      }
+
+      if (amount > walletProvider.balance) {
+        showSpSnackbar(context, 'Saldo tidak mencukupi', isError: true);
         return;
       }
 
@@ -57,6 +75,8 @@ class _QrisPaymentScreenState extends State<QrisPaymentScreen> {
           'merchant': 'Warung UMKM Indonesia',
           'merchantIcon': _imagePath,
           'note': '',
+          'senderId': senderId,
+          'senderWalletId': senderWalletId,
         },
       );
     } catch (e) {
@@ -65,7 +85,7 @@ class _QrisPaymentScreenState extends State<QrisPaymentScreen> {
   }
 
   void _setAmount(double amount) {
-    final formatted = amount.toStringAsFixed(0);
+    final formatted = CurrencyFormatter.formatAsPlainText(amount);
     setState(() {
       _amountController.text = formatted;
     });
@@ -267,7 +287,7 @@ class _QrisPaymentScreenState extends State<QrisPaymentScreen> {
                     const SizedBox(height: 4),
                     Text(
                       CurrencyFormatter.format(
-                        double.tryParse(_amountController.text) ?? 0,
+                        CurrencyFormatter.parse(_amountController.text),
                       ),
                       style: const TextStyle(
                         fontSize: 22,

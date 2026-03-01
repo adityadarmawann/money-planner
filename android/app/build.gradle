@@ -43,8 +43,8 @@ android {
         applicationId "com.indonesia.studentplan"
         minSdkVersion flutter.minSdkVersion
         targetSdk 34
-        versionCode flutterVersionCode.toInteger()
-        versionName flutterVersionName
+        versionCode 5          // ← angka lebih tinggi dari APK yang ada di HP
+        versionName "1.5"      // ← nama versi bebas
     }
 
     buildTypes {

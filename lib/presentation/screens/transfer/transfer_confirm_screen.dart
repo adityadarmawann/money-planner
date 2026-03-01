@@ -180,13 +180,18 @@ class TransferConfirmScreen extends StatelessWidget {
         note: args['note'] as String?,
       );
     } else if (type == TransferType.qris) {
-      // For QRIS simulation, just mark as success
-      success = true;
+        // Process QRIS payment
+        success = await txProvider.qrisPayment(
+          userId: args['senderId'] as String,
+          walletId: args['senderWalletId'] as String,
+          amount: amount,
+          merchantName: args['merchant'] as String? ?? 'Warung UMKM Indonesia',
+        );
     }
 
     if (!context.mounted) return;
 
-    if (success && type != TransferType.qris) {
+    if (success) {
       final userId = authProvider.currentUser?.id;
       if (userId != null) {
         await walletProvider.loadWallet(userId);
