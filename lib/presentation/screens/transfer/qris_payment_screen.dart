@@ -3,6 +3,7 @@ import 'dart:io';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../core/utils/currency_formatter.dart';
+import '../../../core/utils/thousand_separator_formatter.dart';
 import '../../widgets/common/sp_button.dart';
 import '../../widgets/common/sp_snackbar.dart';
 import 'transfer_screen.dart';
@@ -63,9 +64,10 @@ class _QrisPaymentScreenState extends State<QrisPaymentScreen> {
     }
   }
 
-  void _addAmount(double amount) {
+  void _setAmount(double amount) {
+    final formatted = amount.toStringAsFixed(0);
     setState(() {
-      _amountController.text = amount.toStringAsFixed(0);
+      _amountController.text = formatted;
     });
   }
 
@@ -155,6 +157,7 @@ class _QrisPaymentScreenState extends State<QrisPaymentScreen> {
                 controller: _amountController,
                 keyboardType: TextInputType.number,
                 onChanged: (_) => setState(() {}),
+                inputFormatters: [ThousandSeparatorFormatter()],
                 textAlign: TextAlign.end,
                 style: const TextStyle(
                   fontSize: 28,
@@ -208,34 +211,34 @@ class _QrisPaymentScreenState extends State<QrisPaymentScreen> {
                 crossAxisSpacing: 8,
                 children: [
                   _QuickAmountButton(
-                    label: 'Rp 10K',
-                    amount: 10000,
-                    onTap: () => _addAmount(10000),
+                    label: 'Rp 5.000',
+                    amount: 5000,
+                    onTap: () => _setAmount(5000),
                   ),
                   _QuickAmountButton(
-                    label: 'Rp 25K',
+                    label: 'Rp 25.000',
                     amount: 25000,
-                    onTap: () => _addAmount(25000),
+                    onTap: () => _setAmount(25000),
                   ),
                   _QuickAmountButton(
-                    label: 'Rp 50K',
+                    label: 'Rp 50.000',
                     amount: 50000,
-                    onTap: () => _addAmount(50000),
+                    onTap: () => _setAmount(50000),
                   ),
                   _QuickAmountButton(
-                    label: 'Rp 100K',
+                    label: 'Rp 100.000',
                     amount: 100000,
-                    onTap: () => _addAmount(100000),
+                    onTap: () => _setAmount(100000),
                   ),
                   _QuickAmountButton(
-                    label: 'Rp 250K',
+                    label: 'Rp 250.000',
                     amount: 250000,
-                    onTap: () => _addAmount(250000),
+                    onTap: () => _setAmount(250000),
                   ),
                   _QuickAmountButton(
-                    label: 'Rp 500K',
-                    amount: 500000,
-                    onTap: () => _addAmount(500000),
+                    label: 'Rp 1.000.000',
+                    amount: 1000000,
+                    onTap: () => _setAmount(1000000),
                   ),
                 ],
               ),

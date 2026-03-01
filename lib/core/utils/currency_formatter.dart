@@ -28,4 +28,15 @@ class CurrencyFormatter {
     final cleaned = value.replaceAll(RegExp(r'[^0-9]'), '');
     return double.tryParse(cleaned) ?? 0;
   }
+
+  static String formatAsPlainText(double amount) {
+    final formatted = amount.toStringAsFixed(0);
+    final reversed = formatted.split('').reversed.join('');
+    final withDots = reversed
+        .replaceAllMapped(RegExp(r'.{1,3}'), (match) => '${match.group(0)}.')
+        .split('')
+        .reversed
+        .join();
+    return withDots.endsWith('.') ? withDots.substring(0, withDots.length - 1) : withDots;
+  }
 }

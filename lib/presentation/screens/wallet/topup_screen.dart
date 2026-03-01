@@ -6,6 +6,7 @@ import '../../../providers/transaction_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/currency_formatter.dart';
+import '../../../core/utils/thousand_separator_formatter.dart';
 import '../../widgets/common/sp_button.dart';
 import '../../widgets/common/sp_snackbar.dart';
 
@@ -22,7 +23,7 @@ class _TopupScreenState extends State<TopupScreen> {
   bool _useCustom = false;
 
   final List<double> _presetAmounts = [
-    50000, 100000, 200000, 500000, 1000000, 2000000,
+    5000, 25000, 50000, 100000, 250000, 1000000,
   ];
 
   @override
@@ -49,19 +50,18 @@ class _TopupScreenState extends State<TopupScreen> {
 
     if (userId == null || walletId == null) return;
 
-    // Top up wallet
-    final walletSuccess =
-        await walletProvider.topUp(userId: userId, amount: _finalAmount);
+    // Create transaction record (which also updates wallet balance)
+    final txSuccess = await txProvider.topUp(
+      userId: userId,
+      walletId: walletId,
+      amount: _finalAmount,
+    );
 
     if (!mounted) return;
 
-    if (walletSuccess) {
-      // Create transaction record
-      await txProvider.topUp(
-        userId: userId,
-        walletId: walletId,
-        amount: _finalAmount,
-      );
+    if (txSuccess) {
+      // Refresh wallet balance in provider
+      await walletProvider.loadWallet(userId);
       if (mounted) {
         showSpSnackbar(
           context,
@@ -73,7 +73,7 @@ class _TopupScreenState extends State<TopupScreen> {
     } else {
       showSpSnackbar(
         context,
-        walletProvider.errorMessage ?? 'Top up gagal',
+        txProvider.errorMessage ?? 'Top up gagal',
         isError: true,
       );
     }
@@ -161,7 +161,7 @@ class _TopupScreenState extends State<TopupScreen> {
                     ),
                     child: Center(
                       child: Text(
-                        CurrencyFormatter.formatCompact(amount),
+                          'Rp ${CurrencyFormatter.formatAsPlainText(amount)}',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -184,6 +184,7 @@ class _TopupScreenState extends State<TopupScreen> {
             TextFormField(
               controller: _customController,
               keyboardType: TextInputType.number,
+              inputFormatters: [ThousandSeparatorFormatter()],
               decoration: InputDecoration(
                 prefixText: 'Rp ',
                 hintText: '0',
