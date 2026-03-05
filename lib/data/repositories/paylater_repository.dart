@@ -368,4 +368,88 @@ class PaylaterRepository {
       throw AppException.fromError(e);
     }
   }
+
+  Future<Map<String, dynamic>> payWithPaylaterBankTransfer({
+    required String userId,
+    required String walletId,
+    required double amount,
+    required double fee,
+    required int tenorMonths,
+    required String bankName,
+    required String accountNumber,
+    String? note,
+  }) async {
+    try {
+      final account = await getAccount(userId);
+      if (account == null) {
+        throw const AppException(message: 'Akun PayLater tidak ditemukan');
+      }
+      if (account.status != PaylaterStatus.active) {
+        throw const AppException(message: 'Akun PayLater tidak aktif');
+      }
+
+      final totalAmount = amount + fee;
+      if (totalAmount > account.remainingLimit) {
+        throw const AppException(
+            message: 'Jumlah melebihi sisa limit PayLater');
+      }
+
+      // Calculate interest
+      final interestAmount = amount * (account.interestRate / 100) * tenorMonths;
+      final totalDue = amount + interestAmount;
+      final dueDate = DateTime.now().add(Duration(days: tenorMonths * 30));
+
+      // Create bank transfer transaction with PayLater
+      final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+      final refCode = 'BPL${timestamp.substring(timestamp.length - 8)}';
+
+      final txData = await _client.from('transactions').insert({
+        'sender_id': userId,
+        'wallet_id': walletId,
+        'type': 'bank_transfer_paylater',
+        'amount': amount,
+        'fee': fee,
+        'status': 'success',
+        'note': note ?? 'Transfer bank ke $bankName dengan PayLater',
+        'ref_code': refCode,
+        'metadata': {
+          'bank_name': bankName,
+          'account_number': accountNumber,
+          'payment_method': 'paylater',
+        },
+      }).select().single();
+
+      // Create bill
+      final billData = await _client.from('paylater_bills').insert({
+        'paylater_id': account.id,
+        'user_id': userId,
+        'principal_amount': totalAmount,
+        'interest_amount': interestAmount,
+        'total_due': totalDue + (fee * (account.interestRate / 100) * tenorMonths),
+        'tenor_months': tenorMonths,
+        'due_date': dueDate.toIso8601String().split('T')[0],
+        'status': 'active',
+        'transaction_id': txData['id'],
+        'payment_type': 'bank_transfer',
+        'merchant_info': {
+          'bank_name': bankName,
+          'account_number': accountNumber,
+        },
+      }).select().single();
+
+      // Update used limit
+      await _client
+          .from('paylater_accounts')
+          .update({'used_limit': account.usedLimit + totalAmount})
+          .eq('id', account.id);
+
+      return {
+        'transaction': TransactionModel.fromJson(txData),
+        'bill': PaylaterBillModel.fromJson(billData),
+      };
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw AppException.fromError(e);
+    }
+  }
 }

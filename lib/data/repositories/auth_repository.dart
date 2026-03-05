@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
@@ -46,10 +47,13 @@ class AuthRepository {
     required String username,
   }) async {
     try {
+      // Normalize username to lowercase for case-insensitive matching
+      final normalizedUsername = username.toLowerCase().trim();
+      
       final response = await _client.auth.signUp(
         email: email,
         password: password,
-        data: {'full_name': fullName, 'username': username},
+        data: {'full_name': fullName, 'username': normalizedUsername},
       );
       
       // Check if email confirmation is required
@@ -66,8 +70,19 @@ class AuthRepository {
       await Future.delayed(const Duration(seconds: 1));
       await _client.from('users').update({
         'full_name': fullName,
-        'username': username,
+        'username': normalizedUsername,
       }).eq('id', response.user!.id);
+
+      // Create wallet for new user (starting balance 0)
+      try {
+        await _client.from('wallets').insert({
+          'user_id': response.user!.id,
+          'balance': 0,
+        });
+      } catch (e) {
+        // Wallet might already exist, continue anyway
+        debugPrint('Wallet creation failed: $e');
+      }
 
       return _fetchUserProfile(response.user!.id);
     } on AuthException catch (e) {

@@ -39,12 +39,12 @@ class PaymentMethodSelector extends StatelessWidget {
         const Text(
           'Metode Pembayaran',
           style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
             color: AppColors.textPrimary,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         // Wallet Option
         _PaymentMethodCard(
           icon: Icons.account_balance_wallet,
@@ -70,12 +70,12 @@ class PaymentMethodSelector extends StatelessWidget {
         ),
         // Tenor Selector (only shown when PayLater selected)
         if (selectedMethod == PaymentMethod.paylater) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           const Text(
             'Pilih Tenor Cicilan',
             style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
             ),
           ),

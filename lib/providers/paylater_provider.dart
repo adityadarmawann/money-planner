@@ -205,4 +205,44 @@ class PaylaterProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<bool> payWithPaylaterBankTransfer({
+    required String userId,
+    required String walletId,
+    required double amount,
+    required double fee,
+    required int tenorMonths,
+    required String bankName,
+    required String accountNumber,
+    String? note,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final result = await _paylaterRepository.payWithPaylaterBankTransfer(
+        userId: userId,
+        walletId: walletId,
+        amount: amount,
+        fee: fee,
+        tenorMonths: tenorMonths,
+        bankName: bankName,
+        accountNumber: accountNumber,
+        note: note,
+      );
+      final bill = result['bill'] as PaylaterBillModel;
+      _bills.insert(0, bill);
+
+      // Refresh account
+      _account = await _paylaterRepository.getAccount(userId);
+      return true;
+    } on AppException catch (e) {
+      _errorMessage = e.message;
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }

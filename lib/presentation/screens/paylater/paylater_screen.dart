@@ -67,27 +67,6 @@ class _PaylaterScreenState extends State<PaylaterScreen> {
               if (account != null) _buildAccountCard(account),
               const SizedBox(height: 24),
               
-              // Info panel - PayLater sebagai metode pembayaran
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.backgroundSecondary,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.info_outline, color: AppColors.primary, size: 20),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'PayLater dapat digunakan saat melakukan pembayaran QRIS atau transfer',
-                        style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               const SizedBox(height: 24),
               
               // Overdue Bills (prioritas tertinggi)
@@ -100,7 +79,7 @@ class _PaylaterScreenState extends State<PaylaterScreen> {
                       'Tagihan Terlambat',
                       style: TextStyle(
                         fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                         color: AppColors.error,
                       ),
                     ),
@@ -119,7 +98,7 @@ class _PaylaterScreenState extends State<PaylaterScreen> {
               // Active Bills (belum jatuh tempo)
               const Text(
                 'Tagihan Aktif',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
               if (provider.activeBills.isEmpty && provider.overdueBills.isEmpty)
@@ -195,7 +174,7 @@ class _PaylaterScreenState extends State<PaylaterScreen> {
               SizedBox(width: 8),
               Text(
                 'Akun Paylater',
-                style: TextStyle(color: Colors.white70, fontSize: 13),
+                style: TextStyle(color: Colors.white70, fontSize: 15, fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -227,7 +206,7 @@ class _PaylaterScreenState extends State<PaylaterScreen> {
           const SizedBox(height: 4),
           Text(
             'Terpakai ${account.usedPercentage.toStringAsFixed(0)}% | Bunga ${account.interestRate}%/bulan',
-            style: const TextStyle(color: Colors.white70, fontSize: 11),
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
           ),
           
           // Limit Increase Progress Tracker
@@ -244,7 +223,7 @@ class _PaylaterScreenState extends State<PaylaterScreen> {
                 const SizedBox(width: 8),
                 const Text(
                   'Progress Kenaikan Limit',
-                  style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                  style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
                 ),
               ],
             ),
@@ -278,7 +257,7 @@ class _PaylaterScreenState extends State<PaylaterScreen> {
                         account.onTimePaymentCount == 0
                           ? 'Bayar 3x tepat waktu untuk naik Rp 500rb'
                           : '${account.paymentsNeededForIncrease}x lagi bayar tepat waktu → Rp ${CurrencyFormatter.formatAsPlainText(account.creditLimit + 500000)}',
-                        style: const TextStyle(color: Colors.white70, fontSize: 11),
+                        style: const TextStyle(color: Colors.white70, fontSize: 12),
                       ),
                     ],
                   ),
@@ -291,11 +270,11 @@ class _PaylaterScreenState extends State<PaylaterScreen> {
               children: [
                 Text(
                   'Total dibayar: ${account.totalPaidBills}x',
-                  style: const TextStyle(color: Colors.white60, fontSize: 10),
+                  style: const TextStyle(color: Colors.white60, fontSize: 12),
                 ),
                 Text(
                   'Target max: Rp 10jt',
-                  style: const TextStyle(color: Colors.white60, fontSize: 10),
+                  style: const TextStyle(color: Colors.white60, fontSize: 12),
                 ),
               ],
             ),
@@ -314,7 +293,7 @@ class _PaylaterScreenState extends State<PaylaterScreen> {
                   const SizedBox(width: 8),
                   const Text(
                     'Limit Maksimal Tercapai! 🎉',
-                    style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                    style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
                   ),
                 ],
               ),
@@ -397,11 +376,11 @@ class _LimitInfo extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 14)),
         Text(value,
             style: const TextStyle(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: 20,
                 fontWeight: FontWeight.bold)),
       ],
     );

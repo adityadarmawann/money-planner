@@ -14,8 +14,8 @@ class QrisCameraScreen extends StatefulWidget {
 }
 
 class _QrisCameraScreenState extends State<QrisCameraScreen> {
-  late CameraController _cameraController;
-  late Future<void> _initializeControllerFuture;
+  CameraController? _cameraController;
+  Future<void>? _initializeControllerFuture;
   final ImagePicker _imagePicker = ImagePicker();
   bool _isCaptured = false;
   File? _capturedImage;
@@ -35,19 +35,22 @@ class _QrisCameraScreenState extends State<QrisCameraScreen> {
       final cameras = await availableCameras();
       final firstCamera = cameras.first;
 
-      _cameraController = CameraController(
+      final controller = CameraController(
         firstCamera,
         ResolutionPreset.high,
         enableAudio: false,
       );
 
-      _initializeControllerFuture = _cameraController.initialize().then((_) {
-        setState(() {
-          _maxZoom = 5.0; // Default max zoom multiplier
-          _currentZoom = _minZoom;
-        });
+      _cameraController = controller;
+      _initializeControllerFuture = controller.initialize().then((_) {
+        if (mounted) {
+          setState(() {
+            _maxZoom = 5.0; // Default max zoom multiplier
+            _currentZoom = _minZoom;
+          });
+        }
+        return;
       });
-      setState(() {});
     } catch (e) {
       debugPrint('Error initializing camera: $e');
       if (mounted) {
@@ -61,10 +64,13 @@ class _QrisCameraScreenState extends State<QrisCameraScreen> {
 
   Future<void> _toggleFlash() async {
     try {
+      final controller = _cameraController;
+      if (controller == null || !controller.value.isInitialized) return;
+
       if (_flashEnabled) {
-        await _cameraController.setFlashMode(FlashMode.off);
+        await controller.setFlashMode(FlashMode.off);
       } else {
-        await _cameraController.setFlashMode(FlashMode.torch);
+        await controller.setFlashMode(FlashMode.torch);
       }
       setState(() {
         _flashEnabled = !_flashEnabled;
@@ -76,7 +82,10 @@ class _QrisCameraScreenState extends State<QrisCameraScreen> {
 
   Future<void> _setZoom(double zoom) async {
     try {
-      await _cameraController.setZoomLevel(zoom);
+      final controller = _cameraController;
+      if (controller == null || !controller.value.isInitialized) return;
+
+      await controller.setZoomLevel(zoom);
       setState(() {
         _currentZoom = zoom;
       });
@@ -87,16 +96,20 @@ class _QrisCameraScreenState extends State<QrisCameraScreen> {
 
   Future<void> _capturePhoto() async {
     try {
-      await _initializeControllerFuture;
+      final initFuture = _initializeControllerFuture;
+      final controller = _cameraController;
+      if (initFuture == null || controller == null) return;
+
+      await initFuture;
       
       // Trigger autofocus before capture
       try {
-        await _cameraController.setFocusMode(FocusMode.auto);
+        await controller.setFocusMode(FocusMode.auto);
       } catch (e) {
         debugPrint('Error setting autofocus: $e');
       }
 
-      final image = await _cameraController.takePicture();
+      final image = await controller.takePicture();
 
       setState(() {
         _capturedImage = File(image.path);
@@ -173,7 +186,7 @@ class _QrisCameraScreenState extends State<QrisCameraScreen> {
 
   @override
   void dispose() {
-    _cameraController.dispose();
+    _cameraController?.dispose();
     super.dispose();
   }
 
@@ -190,7 +203,11 @@ class _QrisCameraScreenState extends State<QrisCameraScreen> {
       body: FutureBuilder<void>(
         future: _initializeControllerFuture,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
+          final controller = _cameraController;
+
+          if (snapshot.connectionState == ConnectionState.done &&
+              controller != null &&
+              controller.value.isInitialized) {
             return SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
@@ -222,7 +239,7 @@ class _QrisCameraScreenState extends State<QrisCameraScreen> {
                                   children: [
                                     // Camera preview fills the container
                                     Positioned.fill(
-                                      child: CameraPreview(_cameraController),
+                                      child: CameraPreview(controller),
                                     ),
                                     // Focus square overlay
                                     Container(

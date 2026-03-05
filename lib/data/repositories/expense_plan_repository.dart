@@ -133,7 +133,16 @@ class ExpensePlanRepository {
   // Delete expense plan
   Future<void> deleteExpensePlan(String id) async {
     try {
-      await _client.from('expense_plans').delete().eq('id', id);
+      final deleted = await _client
+          .from('expense_plans')
+          .delete()
+          .eq('id', id)
+          .select('id')
+          .maybeSingle();
+
+      if (deleted == null) {
+        throw Exception('Expense plan tidak ditemukan atau tidak punya akses.');
+      }
     } catch (e) {
       throw Exception('Failed to delete expense plan: $e');
     }
@@ -159,6 +168,27 @@ class ExpensePlanRepository {
     }
   }
 
+  // Toggle completion status
+  Future<ExpensePlan> toggleCompleted(String id, bool isCompleted) async {
+    try {
+      final response = await _client
+          .from('expense_plans')
+          .update({
+            'is_completed': !isCompleted,
+            'completed_at':
+                !isCompleted ? DateTime.now().toIso8601String() : null,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', id)
+          .select()
+          .single();
+
+      return ExpensePlan.fromJson(response);
+    } catch (e) {
+      throw Exception('Failed to toggle expense plan completion: $e');
+    }
+  }
+
   // Get summary untuk tanggal tertentu
   Future<double> getTotalAmountForDate(String userId, DateTime date) async {
     try {
@@ -181,7 +211,8 @@ class ExpensePlanRepository {
   }
 
   // Get total amount untuk minggu tertentu
-  Future<double> getTotalAmountForWeek(String userId, DateTime startDate) async {
+  Future<double> getTotalAmountForWeek(
+      String userId, DateTime startDate) async {
     try {
       final endDate = startDate.add(const Duration(days: 7));
       final startStr = startDate.toIso8601String().split('T')[0];

@@ -11,10 +11,12 @@ import '../../widgets/common/sp_snackbar.dart';
 
 class ExpensePlanCreateScreen extends StatefulWidget {
   final ExpensePlan? plan; // For editing
+  final DateTime? initialDate; // For creating from selected calendar date
 
   const ExpensePlanCreateScreen({
     super.key,
     this.plan,
+    this.initialDate,
   });
 
   @override
@@ -43,10 +45,10 @@ class _ExpensePlanCreateScreenState extends State<ExpensePlanCreateScreen> {
     _amountController =
         TextEditingController(text: widget.plan?.amount.toString() ?? '');
     _notesController = TextEditingController(text: widget.plan?.notes ?? '');
-    _customReminderController =
-        TextEditingController(text: widget.plan?.customReminderHours?.toString() ?? '');
+    _customReminderController = TextEditingController(
+        text: widget.plan?.customReminderHours?.toString() ?? '');
 
-    _selectedDate = widget.plan?.plannedDate ?? DateTime.now();
+    _selectedDate = widget.plan?.plannedDate ?? widget.initialDate ?? DateTime.now();
     _selectedCategory = widget.plan?.category ?? ExpenseCategory.makanan;
     _selectedPaymentSource =
         widget.plan?.paymentSource ?? PaymentSource.studentPlanWallet;
@@ -64,11 +66,16 @@ class _ExpensePlanCreateScreenState extends State<ExpensePlanCreateScreen> {
   }
 
   Future<void> _selectDate() async {
+    final now = DateTime.now();
+    final initialDate = _selectedDate ?? now;
+    final firstDate = DateTime(now.year - 5, 1, 1);
+    final lastDate = DateTime(now.year + 5, 12, 31);
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate ?? DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
     );
 
     if (picked != null) {
@@ -94,8 +101,14 @@ class _ExpensePlanCreateScreenState extends State<ExpensePlanCreateScreen> {
       return;
     }
 
-    if (_selectedReminder == ReminderType.custom && _customReminderHours == null) {
+    if (_selectedReminder == ReminderType.custom &&
+        _customReminderHours == null) {
       showSpSnackbar(context, 'Input jam reminder kustom', isError: true);
+      return;
+    }
+    if (_selectedReminder == ReminderType.custom &&
+        (_customReminderHours ?? 0) <= 0) {
+      showSpSnackbar(context, 'Jam reminder harus lebih dari 0', isError: true);
       return;
     }
 
@@ -107,27 +120,68 @@ class _ExpensePlanCreateScreenState extends State<ExpensePlanCreateScreen> {
       return;
     }
 
-    final success = await expensePlanProvider.createExpensePlan(
-      userId: authProvider.currentUser!.id,
-      title: _titleController.text.trim(),
-      amount: double.parse(_amountController.text),
-      plannedDate: _selectedDate!,
-      category: _selectedCategory!,
-      paymentSource: _selectedPaymentSource!,
-      reminderType: _selectedReminder,
-      customReminderHours: _customReminderHours,
-      notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-    );
+    final parsedAmount = double.tryParse(_amountController.text.trim());
+    if (parsedAmount == null) {
+      showSpSnackbar(context, 'Jumlah pengeluaran tidak valid', isError: true);
+      return;
+    }
+
+    bool success;
+    if (widget.plan == null) {
+      success = await expensePlanProvider.createExpensePlan(
+        userId: authProvider.currentUser!.id,
+        title: _titleController.text.trim(),
+        amount: parsedAmount,
+        plannedDate: _selectedDate!,
+        category: _selectedCategory!,
+        paymentSource: _selectedPaymentSource!,
+        reminderType: _selectedReminder,
+        customReminderHours: _selectedReminder == ReminderType.custom
+            ? _customReminderHours
+            : null,
+        notes: _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
+      );
+    } else {
+      success = await expensePlanProvider.updateExpensePlan(
+        widget.plan!.id,
+        {
+          'title': _titleController.text.trim(),
+          'amount': parsedAmount,
+          'planned_date': _selectedDate!.toIso8601String().split('T')[0],
+          'category': _selectedCategory!,
+          'payment_source': _selectedPaymentSource!,
+          'reminder_type': _selectedReminder,
+          'custom_reminder_hours': _selectedReminder == ReminderType.custom
+              ? _customReminderHours
+              : null,
+          'notes': _notesController.text.trim().isEmpty
+              ? null
+              : _notesController.text.trim(),
+        },
+      );
+    }
 
     if (!mounted) return;
 
     if (success) {
-      showSpSnackbar(context, 'Rencana pengeluaran berhasil ditambahkan',
-          isError: false);
+      final syncWarning = expensePlanProvider.syncWarningMessage;
+      showSpSnackbar(
+        context,
+        syncWarning ??
+            (widget.plan == null
+                ? 'Rencana pengeluaran berhasil ditambahkan'
+                : 'Rencana pengeluaran berhasil diperbarui'),
+        isError: false,
+      );
       Navigator.pop(context);
     } else {
-      showSpSnackbar(context, expensePlanProvider.errorMessage ?? 'Terjadi kesalahan',
-          isError: true);
+      showSpSnackbar(
+        context,
+        expensePlanProvider.errorMessage ?? 'Terjadi kesalahan',
+        isError: true,
+      );
     }
   }
 
@@ -394,6 +448,10 @@ class _ExpensePlanCreateScreenState extends State<ExpensePlanCreateScreen> {
             onChanged: (value) {
               setState(() {
                 _selectedReminder = value;
+                if (_selectedReminder != ReminderType.custom) {
+                  _customReminderHours = null;
+                  _customReminderController.clear();
+                }
               });
             },
           ),
@@ -407,8 +465,7 @@ class _ExpensePlanCreateScreenState extends State<ExpensePlanCreateScreen> {
             keyboardType: TextInputType.number,
             onChanged: (value) {
               setState(() {
-                _customReminderHours =
-                    int.tryParse(value);
+                _customReminderHours = int.tryParse(value);
               });
             },
             validator: (v) {
@@ -450,17 +507,25 @@ class _ExpensePlanCreateScreenState extends State<ExpensePlanCreateScreen> {
 
   Future<void> _delete() async {
     final expensePlanProvider = context.read<ExpensePlanProvider>();
-    final success = await expensePlanProvider.deleteExpensePlan(widget.plan!.id);
+    final success =
+        await expensePlanProvider.deleteExpensePlan(widget.plan!.id);
 
     if (!mounted) return;
 
     if (success) {
-      showSpSnackbar(context, 'Rencana pengeluaran berhasil dihapus',
-          isError: false);
+      showSpSnackbar(
+        context,
+        'Rencana pengeluaran berhasil dihapus',
+        isError: false,
+      );
       Navigator.pop(context);
     } else {
-      showSpSnackbar(context, 'Gagal menghapus rencana pengeluaran',
-          isError: true);
+      showSpSnackbar(
+        context,
+        expensePlanProvider.errorMessage ??
+            'Gagal menghapus rencana pengeluaran',
+        isError: true,
+      );
     }
   }
 }

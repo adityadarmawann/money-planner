@@ -1,7 +1,7 @@
 name: student_plan
 description: Student Plan - Financial Planner untuk Mahasiswa
 publish_to: "none"
-version: 1.6.1+1
+version: 1.6.4+4
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -27,6 +27,9 @@ dependencies:
   path_provider: ^2.1.1
   flutter_animate: ^4.3.0
   cupertino_icons: ^1.0.2
+  device_calendar: ^4.3.3
+  permission_handler: ^11.3.1
+  timezone: ^0.9.4
 
 dev_dependencies:
   flutter_test:

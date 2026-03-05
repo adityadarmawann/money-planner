@@ -43,7 +43,11 @@ class _BudgetScreenState extends State<BudgetScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<BudgetProvider>();
     final expensePlanProvider = context.watch<ExpensePlanProvider>();
-    final monthlyPlans = [...expensePlanProvider.expensePlans]
+    
+    // Filter: hanya tampilkan yang belum completed di list utama
+    final monthlyPlans = expensePlanProvider.expensePlans
+        .where((plan) => !plan.isCompleted)
+        .toList()
       ..sort((a, b) => a.plannedDate.compareTo(b.plannedDate));
 
     return Scaffold(
@@ -52,7 +56,10 @@ class _BudgetScreenState extends State<BudgetScreen> {
         actions: [
           Consumer<ExpensePlanProvider>(
             builder: (context, expensePlanProvider, _) {
-              final planCount = expensePlanProvider.expensePlans.length;
+                // Badge count: hanya hitung yang belum completed
+                final planCount = expensePlanProvider.expensePlans
+                  .where((plan) => !plan.isCompleted)
+                  .length;
               return IconButton(
                 tooltip: 'Rencana Pengeluaran',
                 onPressed: () => Navigator.pushNamed(
@@ -94,11 +101,6 @@ class _BudgetScreenState extends State<BudgetScreen> {
               );
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => Navigator.pushNamed(context, AppRoutes.budgetCreate)
-                .then((_) => _loadData()),
-          ),
         ],
       ),
       body: RefreshIndicator(
@@ -124,6 +126,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
                       (plan) => Padding(
                         padding: const EdgeInsets.only(bottom: 10),
                         child: _ExpensePlanMiniCard(
+                          id: plan.id,
                           title: plan.title,
                           category: plan.category,
                           paymentSource: plan.paymentSource,
@@ -237,14 +240,6 @@ class _BudgetScreenState extends State<BudgetScreen> {
                               style: TextStyle(
                                   color: AppColors.textSecondary, fontSize: 16),
                             ),
-                            const SizedBox(height: 16),
-                            ElevatedButton.icon(
-                              onPressed: () => Navigator.pushNamed(
-                                      context, AppRoutes.budgetCreate)
-                                  .then((_) => _loadData()),
-                              icon: const Icon(Icons.add),
-                              label: const Text('Buat Anggaran'),
-                            ),
                           ],
                         ),
                       ),
@@ -308,6 +303,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
 }
 
 class _ExpensePlanMiniCard extends StatelessWidget {
+  final String id;
   final String title;
   final String category;
   final String paymentSource;
@@ -316,6 +312,7 @@ class _ExpensePlanMiniCard extends StatelessWidget {
   final bool isCompleted;
 
   const _ExpensePlanMiniCard({
+    required this.id,
     required this.title,
     required this.category,
     required this.paymentSource,
@@ -378,13 +375,18 @@ class _ExpensePlanMiniCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Text(
-            CurrencyFormatter.format(amount),
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: AppColors.primary,
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                CurrencyFormatter.format(amount),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
           ),
         ],
       ),

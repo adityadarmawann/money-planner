@@ -83,6 +83,7 @@ CREATE TABLE public.paylater_bills (
   user_id UUID NOT NULL REFERENCES public.users(id),
   principal_amount DECIMAL(15,2) NOT NULL,
   interest_amount DECIMAL(15,2) NOT NULL,
+  late_fee_amount DECIMAL(15,2) DEFAULT 0.00,
   total_due DECIMAL(15,2) NOT NULL,
   tenor_months INTEGER NOT NULL CHECK (tenor_months BETWEEN 1 AND 12),
   due_date DATE NOT NULL,
@@ -127,7 +128,12 @@ CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
   INSERT INTO public.users (id, email, username, full_name)
-  VALUES (NEW.id, NEW.email, split_part(NEW.email, '@', 1), '');
+  VALUES (
+    NEW.id, 
+    NEW.email, 
+    COALESCE((NEW.raw_user_meta_data->>'username'), split_part(NEW.email, '@', 1)),
+    COALESCE((NEW.raw_user_meta_data->>'full_name'), '')
+  );
   INSERT INTO public.wallets (user_id) VALUES (NEW.id);
   INSERT INTO public.paylater_accounts (user_id) VALUES (NEW.id);
   RETURN NEW;
@@ -160,6 +166,7 @@ ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
 CREATE POLICY "Users can view own profile" ON public.users FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can search users for transfer" ON public.users FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY "Users can update own profile" ON public.users FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "Users can view own wallet" ON public.wallets FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can update own wallet" ON public.wallets FOR UPDATE USING (auth.uid() = user_id);

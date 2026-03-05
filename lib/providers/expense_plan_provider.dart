@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../data/models/expense_plan_model.dart';
 import '../data/repositories/expense_plan_repository.dart';
+import '../core/services/calendar_service.dart';
 
 class ExpensePlanProvider extends ChangeNotifier {
   final ExpensePlanRepository _repository;
+  final CalendarService _calendarService = CalendarService();
 
   ExpensePlanProvider({required ExpensePlanRepository repository})
       : _repository = repository;
@@ -11,21 +13,25 @@ class ExpensePlanProvider extends ChangeNotifier {
   List<ExpensePlan> _expensePlans = [];
   bool _isLoading = false;
   String? _errorMessage;
+  String? _syncWarningMessage;
   DateTime _currentMonth = DateTime.now();
 
   List<ExpensePlan> get expensePlans => _expensePlans;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  String? get syncWarningMessage => _syncWarningMessage;
   DateTime get currentMonth => _currentMonth;
 
   // Load expense plans untuk bulan tertentu
-  Future<void> loadExpensePlansForMonth(String userId, int year, int month) async {
+  Future<void> loadExpensePlansForMonth(
+      String userId, int year, int month) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      _expensePlans = await _repository.getExpensePlansByMonth(userId, year, month);
+      _expensePlans =
+          await _repository.getExpensePlansByMonth(userId, year, month);
       _isLoading = false;
     } catch (e) {
       _errorMessage = e.toString();
@@ -64,6 +70,7 @@ class ExpensePlanProvider extends ChangeNotifier {
   }) async {
     _isLoading = true;
     _errorMessage = null;
+    _syncWarningMessage = null;
     notifyListeners();
 
     try {
@@ -79,13 +86,21 @@ class ExpensePlanProvider extends ChangeNotifier {
         notes: notes,
       );
 
+      final eventId = await _calendarService.syncExpensePlanToCalendar(plan);
+      if (eventId == null) {
+        _syncWarningMessage =
+            'Data tersimpan, tapi sinkronisasi ke kalender perangkat gagal.';
+      }
+
       _expensePlans.add(plan);
       _expensePlans.sort((a, b) => a.plannedDate.compareTo(b.plannedDate));
       _isLoading = false;
+      notifyListeners();
       return true;
     } catch (e) {
       _errorMessage = e.toString();
       _isLoading = false;
+      notifyListeners();
       return false;
     }
   }
@@ -97,31 +112,61 @@ class ExpensePlanProvider extends ChangeNotifier {
   ) async {
     _isLoading = true;
     _errorMessage = null;
+    _syncWarningMessage = null;
     notifyListeners();
 
     try {
-      final updated = await _repository.updateExpensePlan(id, updates);
       final index = _expensePlans.indexWhere((p) => p.id == id);
+      final updated = await _repository.updateExpensePlan(id, updates);
+
+      final eventId = await _calendarService.syncExpensePlanToCalendar(updated);
+      if (eventId == null) {
+        _syncWarningMessage =
+            'Perubahan tersimpan, tapi sinkronisasi ke kalender perangkat gagal.';
+      }
+
       if (index >= 0) {
         _expensePlans[index] = updated;
       }
       _isLoading = false;
+      notifyListeners();
       return true;
     } catch (e) {
       _errorMessage = e.toString();
       _isLoading = false;
+      notifyListeners();
       return false;
     }
   }
 
   // Delete expense plan
   Future<bool> deleteExpensePlan(String id) async {
+    _isLoading = true;
+    _errorMessage = null;
+    _syncWarningMessage = null;
+    notifyListeners();
+
     try {
+      final hasCalendarPermission = await _calendarService.hasPermission();
+      if (hasCalendarPermission) {
+        final calendarDeleted =
+            await _calendarService.deleteExpensePlanByPlanId(id);
+        if (!calendarDeleted) {
+          _syncWarningMessage =
+              'Rencana terhapus, tapi event kalender perangkat tidak ditemukan.';
+        }
+      }
+
       await _repository.deleteExpensePlan(id);
+
       _expensePlans.removeWhere((p) => p.id == id);
+      _isLoading = false;
+      notifyListeners();
       return true;
     } catch (e) {
       _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
       return false;
     }
   }
@@ -130,6 +175,22 @@ class ExpensePlanProvider extends ChangeNotifier {
   Future<bool> markAsCompleted(String id) async {
     try {
       final updated = await _repository.markAsCompleted(id);
+      final index = _expensePlans.indexWhere((p) => p.id == id);
+      if (index >= 0) {
+        _expensePlans[index] = updated;
+      }
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return false;
+    }
+  }
+
+  // Toggle completion status
+  Future<bool> toggleCompleted(String id, bool currentStatus) async {
+    try {
+      final updated = await _repository.toggleCompleted(id, currentStatus);
       final index = _expensePlans.indexWhere((p) => p.id == id);
       if (index >= 0) {
         _expensePlans[index] = updated;
@@ -155,7 +216,8 @@ class ExpensePlanProvider extends ChangeNotifier {
   // Get dates yang punya expense plans
   List<DateTime> getDatesWithPlans() {
     return _expensePlans
-        .map((p) => DateTime(p.plannedDate.year, p.plannedDate.month, p.plannedDate.day))
+        .map((p) => DateTime(
+            p.plannedDate.year, p.plannedDate.month, p.plannedDate.day))
         .toSet()
         .toList();
   }

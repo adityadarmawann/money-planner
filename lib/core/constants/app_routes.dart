@@ -10,6 +10,7 @@ class AppRoutes {
   static const String editProfile = '/profile/edit';
   static const String wallet = '/wallet';
   static const String topup = '/wallet/topup';
+  static const String topupSuccess = '/wallet/topup/success';
   static const String transfer = '/transfer';
   static const String transferConfirm = '/transfer/confirm';
   static const String transferSuccess = '/transfer/success';

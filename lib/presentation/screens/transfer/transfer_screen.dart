@@ -44,6 +44,13 @@ class TransferScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: AppColors.cardGradient,
                 borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.shadow,
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -52,23 +59,24 @@ class TransferScreen extends StatelessWidget {
                     'Saldo Tersedia',
                     style: TextStyle(
                       color: Colors.white70,
-                      fontSize: 13,
+                      fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   Text(
                     CurrencyFormatter.format(walletProvider.balance),
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 28,
+                      fontSize: 32,
                       fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 28),
 
             // 2. Informasi Dompet (with user full name)
             Container(
@@ -85,17 +93,17 @@ class TransferScreen extends StatelessWidget {
                   const Text(
                     'Informasi Dompet',
                     style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   _InfoRow(
                     label: 'Nama Lengkap',
                     value: user?.fullName ?? 'N/A',
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   _InfoRow(
                     label: 'Username',
                     value: '@${user?.username ?? 'N/A'}',
@@ -103,7 +111,11 @@ class TransferScreen extends StatelessWidget {
                   const SizedBox(height: 8),
                   _InfoRow(
                     label: 'No. Rekening',
-                    value: wallet?.id.substring(0, 8).toUpperCase() ?? 'N/A',
+                    value: wallet != null
+                        ? (wallet.id.length >= 8
+                            ? wallet.id.substring(0, 8).toUpperCase()
+                            : wallet.id.toUpperCase())
+                        : 'N/A',
                   ),
                 ],
               ),
@@ -122,12 +134,12 @@ class TransferScreen extends StatelessWidget {
             const Text(
               'Transfer',
               style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Row(
               children: [
                 Expanded(
@@ -170,7 +182,7 @@ class TransferScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.backgroundSecondary,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                border: Border.all(color: AppColors.secondary.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
@@ -178,10 +190,10 @@ class TransferScreen extends StatelessWidget {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: AppColors.error.withValues(alpha: 0.1),
+                      color: AppColors.secondary.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.credit_card, color: AppColors.error),
+                    child: const Icon(Icons.credit_card, color: AppColors.secondary),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -191,8 +203,8 @@ class TransferScreen extends StatelessWidget {
                         const Text(
                           'PayLater',
                           style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary,
                           ),
                         ),
@@ -275,29 +287,36 @@ class _TransferCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.backgroundSecondary,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(color: AppColors.border),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           children: [
             Container(
-              width: 40,
-              height: 40,
+              width: 50,
+              height: 50,
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: color, size: 20),
+              child: Icon(icon, color: color, size: 24),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Text(
               title,
               style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
               ),
               textAlign: TextAlign.center,
@@ -306,7 +325,7 @@ class _TransferCard extends StatelessWidget {
             Text(
               subtitle,
               style: const TextStyle(
-                fontSize: 10,
+                fontSize: 11,
                 color: AppColors.textSecondary,
               ),
               textAlign: TextAlign.center,
@@ -342,22 +361,46 @@ class _UserTransferScreenState extends State<_UserTransferScreen> {
 
   Future<void> _searchUser() async {
     final username = _usernameController.text.trim();
-    if (username.isEmpty) return;
+    if (username.isEmpty) {
+      showSpSnackbar(context, 'Masukkan username', isError: true);
+      return;
+    }
 
-    setState(() => _searching = true);
-
-    final userRepo = UserRepository(
-      client: Supabase.instance.client,
-    );
-
-    final user = await userRepo.getUserByUsername(username);
     setState(() {
-      _recipient = user;
-      _searching = false;
+      _searching = true;
+      _recipient = null; // Reset previous search
     });
 
-    if (user == null && mounted) {
-      showSpSnackbar(context, 'Pengguna tidak ditemukan', isError: true);
+    try {
+      final userRepo = UserRepository(
+        client: Supabase.instance.client,
+      );
+
+      final user = await userRepo.getUserByUsername(username);
+      
+      if (!mounted) return;
+      
+      setState(() {
+        _recipient = user;
+        _searching = false;
+      });
+
+      if (user == null) {
+        showSpSnackbar(context, 'Pengguna tidak ditemukan', isError: true);
+      } else {
+        showSpSnackbar(context, 'Pengguna ditemukan: ${user.fullName}', isError: false);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _recipient = null;
+        _searching = false;
+      });
+      showSpSnackbar(
+        context,
+        'Terjadi kesalahan: ${e.toString()}',
+        isError: true,
+      );
     }
   }
 
@@ -385,16 +428,22 @@ class _UserTransferScreenState extends State<_UserTransferScreen> {
       return;
     }
 
-    // Tidak perlu validasi saldo wallet di sini karena user bisa pilih PayLater
-    // di halaman konfirmasi jika saldo tidak cukup
+    if (amount > walletProvider.balance) {
+      showSpSnackbar(context, AppStrings.insufficientBalance, isError: true);
+      return;
+    }
 
-    // Get receiver wallet
+    // Get receiver wallet via RPC (works with strict RLS)
     final walletRepo = WalletRepository(client: Supabase.instance.client);
-    final receiverWallet = await walletRepo.getWallet(_recipient!.id);
-    if (receiverWallet == null) {
+    final receiverWalletId =
+        await walletRepo.getRecipientWalletIdForTransfer(_recipient!.id);
+    if (receiverWalletId == null) {
       if (mounted) {
-        showSpSnackbar(context, 'Wallet penerima tidak ditemukan',
-            isError: true);
+        showSpSnackbar(
+          context, 
+          'Wallet penerima tidak ditemukan. Pastikan penerima sudah terverifikasi dan wallet aktif.',
+          isError: true,
+        );
       }
       return;
     }
@@ -412,7 +461,7 @@ class _UserTransferScreenState extends State<_UserTransferScreen> {
         'senderId': senderId,
         'senderWalletId': senderWalletId,
         'receiverId': _recipient!.id,
-        'receiverWalletId': receiverWallet.id,
+        'receiverWalletId': receiverWalletId,
       },
     );
 
@@ -575,6 +624,7 @@ class _BankTransferScreen extends StatefulWidget {
 }
 
 class _BankTransferScreenState extends State<_BankTransferScreen> {
+  static const double _adminFee = 2500.0;
   String? _selectedBank;
   final _accountController = TextEditingController();
   final _amountController = TextEditingController();
@@ -614,7 +664,6 @@ class _BankTransferScreenState extends State<_BankTransferScreen> {
       return;
     }
 
-    const fee = 6500.0;
     final authProvider = context.read<AuthProvider>();
     final walletProvider = context.read<WalletProvider>();
     final senderId = authProvider.currentUser?.id;
@@ -622,7 +671,7 @@ class _BankTransferScreenState extends State<_BankTransferScreen> {
 
     if (senderId == null || senderWalletId == null) return;
 
-    if (amount + fee > walletProvider.balance) {
+    if (amount + _adminFee > walletProvider.balance) {
       showSpSnackbar(context, AppStrings.insufficientBalance, isError: true);
       return;
     }
@@ -635,7 +684,7 @@ class _BankTransferScreenState extends State<_BankTransferScreen> {
         'bankName': _selectedBank,
         'accountNumber': _accountController.text,
         'amount': amount,
-        'fee': fee,
+        'fee': _adminFee,
         'note': _noteController.text,
         'senderId': senderId,
         'senderWalletId': senderWalletId,
@@ -667,6 +716,7 @@ class _BankTransferScreenState extends State<_BankTransferScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const SizedBox(height: 20),
           const Text('Pilih Bank',
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           const SizedBox(height: 12),
@@ -747,7 +797,7 @@ class _BankTransferScreenState extends State<_BankTransferScreen> {
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(color: AppColors.primary),
               ),
-              helperText: 'Biaya admin: Rp 6.500',
+              helperText: 'Biaya admin: ${CurrencyFormatter.format(_adminFee)}',
             ),
           ),
           const SizedBox(height: 16),

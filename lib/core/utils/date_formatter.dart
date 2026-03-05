@@ -12,28 +12,29 @@ class DateFormatter {
   static DateFormat get _monthYearFormat => DateFormat('MMMM yyyy', 'id_ID');
 
   static String formatDate(DateTime date) {
-    return _dateFormat.format(date);
+    return _dateFormat.format(date.toLocal());
   }
 
   static String formatDateTime(DateTime date) {
-    return _dateTimeFormat.format(date);
+    return _dateTimeFormat.format(date.toLocal());
   }
 
   static String formatTime(DateTime date) {
-    return _timeFormat.format(date);
+    return _timeFormat.format(date.toLocal());
   }
 
   static String formatShortDate(DateTime date) {
-    return _shortDateFormat.format(date);
+    return _shortDateFormat.format(date.toLocal());
   }
 
   static String formatMonthYear(DateTime date) {
-    return _monthYearFormat.format(date);
+    return _monthYearFormat.format(date.toLocal());
   }
 
   static String formatRelative(DateTime date) {
+    final localDate = date.toLocal();
     final now = DateTime.now();
-    final diff = now.difference(date);
+    final diff = now.difference(localDate);
     if (diff.inDays == 0) {
       if (diff.inHours == 0) {
         return '${diff.inMinutes} menit lalu';

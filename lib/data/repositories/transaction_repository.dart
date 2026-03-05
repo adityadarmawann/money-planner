@@ -93,22 +93,24 @@ class TransactionRepository {
     String? note,
   }) async {
     try {
-      final totalDeduct = amount + fee;
-      await _walletRepository.deductBalance(
-        userId: senderId,
-        amount: totalDeduct,
-      );
-      await _walletRepository.addBalance(
-        userId: receiverId,
+      // Execute atomic wallet transfer via RPC (bypasses RLS)
+      final walletIds = await _walletRepository.executeAtomicTransfer(
+        senderId: senderId,
+        receiverId: receiverId,
         amount: amount,
+        fee: fee,
       );
+
+      // Use wallet IDs returned from RPC
+      final actualSenderWalletId = walletIds['sender_wallet_id']!;
+      final actualReceiverWalletId = walletIds['receiver_wallet_id']!;
 
       final refCode = _generateRefCode();
 
       final outTx = await _client.from('transactions').insert({
         'sender_id': senderId,
         'receiver_id': receiverId,
-        'wallet_id': senderWalletId,
+        'wallet_id': actualSenderWalletId,
         'type': 'transfer_out',
         'amount': amount,
         'fee': fee,
@@ -121,7 +123,7 @@ class TransactionRepository {
       final inTx = await _client.from('transactions').insert({
         'sender_id': senderId,
         'receiver_id': receiverId,
-        'wallet_id': receiverWalletId,
+        'wallet_id': actualReceiverWalletId,
         'type': 'transfer_in',
         'amount': amount,
         'fee': 0,

@@ -28,6 +28,10 @@
 	<string>Aplikasi membutuhkan akses kamera untuk scan QR Code</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Aplikasi membutuhkan akses galeri untuk mengubah foto profil</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Aplikasi membutuhkan akses kalender untuk menambahkan reminder rencana pengeluaran</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>Aplikasi membutuhkan akses reminder untuk notifikasi rencana pengeluaran</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

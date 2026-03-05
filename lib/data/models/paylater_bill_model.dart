@@ -6,6 +6,7 @@ class PaylaterBillModel {
   final String userId;
   final double principalAmount;
   final double interestAmount;
+  final double lateFeeAmount;
   final double totalDue;
   final int tenorMonths;
   final DateTime dueDate;
@@ -24,6 +25,7 @@ class PaylaterBillModel {
     required this.tenorMonths,
     required this.dueDate,
     this.paidAt,
+    this.lateFeeAmount = 0.0,
     this.status = BillStatus.active,
     this.transactionId,
     required this.createdAt,
@@ -32,6 +34,26 @@ class PaylaterBillModel {
   bool get isOverdue =>
       status == BillStatus.active && dueDate.isBefore(DateTime.now());
 
+  /// Calculate late fee based on days overdue (Shopee referral)
+  /// 0-7 days: 0%, 8-14 days: 2.5%, 15-30 days: 5%, 30+ days: 10%
+  double _calculateLateFee() {
+    if (status == BillStatus.paid || !isOverdue) return 0.0;
+
+    final now = DateTime.now();
+    final daysOverdue = now.difference(dueDate).inDays;
+
+    if (daysOverdue <= 7) return 0.0;
+    if (daysOverdue <= 14) return principalAmount * 0.025;
+    if (daysOverdue <= 30) return principalAmount * 0.05;
+    return principalAmount * 0.10;
+  }
+
+  /// Get total amount due including late fee if overdue
+  double get totalAmountDue {
+    if (status == BillStatus.paid) return totalDue;
+    return totalDue + _calculateLateFee();
+  }
+
   factory PaylaterBillModel.fromJson(Map<String, dynamic> json) {
     return PaylaterBillModel(
       id: json['id'] as String,
@@ -39,6 +61,7 @@ class PaylaterBillModel {
       userId: json['user_id'] as String,
       principalAmount: (json['principal_amount'] as num).toDouble(),
       interestAmount: (json['interest_amount'] as num).toDouble(),
+      lateFeeAmount: (json['late_fee_amount'] as num?)?.toDouble() ?? 0.0,
       totalDue: (json['total_due'] as num).toDouble(),
       tenorMonths: json['tenor_months'] as int,
       dueDate: DateTime.parse(json['due_date'] as String),
@@ -76,6 +99,7 @@ class PaylaterBillModel {
       'user_id': userId,
       'principal_amount': principalAmount,
       'interest_amount': interestAmount,
+      'late_fee_amount': lateFeeAmount,
       'total_due': totalDue,
       'tenor_months': tenorMonths,
       'due_date': dueDate.toIso8601String().split('T')[0],

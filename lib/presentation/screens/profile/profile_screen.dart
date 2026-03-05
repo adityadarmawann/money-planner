@@ -116,6 +116,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (!mounted) return;
       if (success) {
+        // Clear image cache to ensure UI updates immediately
+        imageCache.clear();
+        imageCache.clearLiveImages();
         showSpSnackbar(context, 'Foto profil berhasil dihapus', isSuccess: true);
       } else {
         showSpSnackbar(

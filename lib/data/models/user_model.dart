@@ -1,4 +1,6 @@
 class UserModel {
+  static const Object _unset = Object();
+
   final String id;
   final String email;
   final String username;
@@ -54,8 +56,8 @@ class UserModel {
     String? email,
     String? username,
     String? fullName,
-    String? phone,
-    String? avatarUrl,
+    Object? phone = _unset,
+    Object? avatarUrl = _unset,
     bool? isVerified,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -65,8 +67,10 @@ class UserModel {
       email: email ?? this.email,
       username: username ?? this.username,
       fullName: fullName ?? this.fullName,
-      phone: phone ?? this.phone,
-      avatarUrl: avatarUrl ?? this.avatarUrl,
+      phone: identical(phone, _unset) ? this.phone : phone as String?,
+      avatarUrl: identical(avatarUrl, _unset)
+          ? this.avatarUrl
+          : avatarUrl as String?,
       isVerified: isVerified ?? this.isVerified,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

@@ -51,48 +51,109 @@ class _MainScreenState extends State<MainScreen> {
       body: SafeArea(
         child: _screens[_currentIndex],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() => _currentIndex = index);
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedLabelStyle: GoogleFonts.poppins(
-          fontWeight: FontWeight.w700,
-          fontSize: 12,
-          color: Colors.black87,
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, -2),
+            ),
+          ],
         ),
-        unselectedLabelStyle: GoogleFonts.poppins(
-          fontWeight: FontWeight.w400,
-          fontSize: 12,
-          color: Colors.black54,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Home
+              _navBarItem(
+                icon: Icons.home_outlined,
+                activeIcon: Icons.home,
+                label: AppStrings.home,
+                isActive: _currentIndex == 0,
+                onTap: () => setState(() => _currentIndex = 0),
+              ),
+              // Budget
+              _navBarItem(
+                icon: Icons.pie_chart_outline,
+                activeIcon: Icons.pie_chart,
+                label: AppStrings.budget,
+                isActive: _currentIndex == 1,
+                onTap: () => setState(() => _currentIndex = 1),
+              ),
+              // QRIS (center - prominent)
+              GestureDetector(
+                onTap: () => setState(() => _currentIndex = 2),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0052CC),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF0052CC).withValues(alpha: 0.4),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.qr_code_2,
+                    size: 28,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              // Wallet
+              _navBarItem(
+                icon: Icons.account_balance_wallet_outlined,
+                activeIcon: Icons.account_balance_wallet,
+                label: AppStrings.wallet,
+                isActive: _currentIndex == 3,
+                onTap: () => setState(() => _currentIndex = 3),
+              ),
+              // Profile
+              _navBarItem(
+                icon: Icons.person_outline,
+                activeIcon: Icons.person,
+                label: AppStrings.profile,
+                isActive: _currentIndex == 4,
+                onTap: () => setState(() => _currentIndex = 4),
+              ),
+            ],
+          ),
         ),
-        items: [
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: AppStrings.home,
+      ),
+    );
+  }
+
+  Widget _navBarItem({
+    required IconData icon,
+    required IconData activeIcon,
+    required String label,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isActive ? activeIcon : icon,
+            color: isActive ? Colors.black87 : Colors.black54,
+            size: 24,
           ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.pie_chart_outline),
-            activeIcon: Icon(Icons.pie_chart),
-            label: AppStrings.budget,
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.qr_code_2, size: 28),
-            activeIcon: Icon(Icons.qr_code_2, size: 28),
-            label: 'QRIS',
-            tooltip: 'Scan QRIS',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.account_balance_wallet_outlined),
-            activeIcon: Icon(Icons.account_balance_wallet),
-            label: AppStrings.wallet,
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: AppStrings.profile,
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 11,
+              fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
+              color: isActive ? Colors.black87 : Colors.black54,
+            ),
           ),
         ],
       ),

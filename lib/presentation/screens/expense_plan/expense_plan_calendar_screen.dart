@@ -3,9 +3,10 @@ import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/expense_plan_provider.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_routes.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/currency_formatter.dart';
+import '../../../data/models/expense_plan_model.dart';
+import 'expense_plan_create_screen.dart';
 import '../../widgets/common/sp_button.dart';
 
 class ExpensePlanCalendarScreen extends StatefulWidget {
@@ -53,6 +54,64 @@ class _ExpensePlanCalendarScreenState extends State<ExpensePlanCalendarScreen> {
     _loadExpensePlans();
   }
 
+  Future<void> _deleteExpensePlan(
+    ExpensePlanProvider provider,
+    String planId,
+    String planTitle,
+  ) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Hapus Rencana'),
+        content: Text('Hapus rencana "$planTitle"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text(
+              'Hapus',
+              style: TextStyle(color: AppColors.error),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    final success = await provider.deleteExpensePlan(planId);
+    if (!mounted) return;
+
+    _loadExpensePlans();
+
+    final message = success
+      ? 'Rencana berhasil dihapus'
+      : (provider.errorMessage ?? 'Gagal menghapus rencana');
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: success ? AppColors.success : AppColors.error,
+      ),
+    );
+  }
+
+  Future<void> _openEditExpensePlan(ExpensePlan plan) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ExpensePlanCreateScreen(plan: plan),
+      ),
+    );
+
+    if (!mounted) return;
+    _loadExpensePlans();
+  }
+
   @override
   Widget build(BuildContext context) {
     final expensePlanProvider = context.watch<ExpensePlanProvider>();
@@ -91,8 +150,17 @@ class _ExpensePlanCalendarScreenState extends State<ExpensePlanCalendarScreen> {
               // Add Button
               SpButton(
                 text: 'Tambah Rencana Pengeluaran',
-                onPressed: () {
-                  Navigator.pushNamed(context, AppRoutes.expensePlanCreate);
+                onPressed: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ExpensePlanCreateScreen(
+                        initialDate: _selectedDate,
+                      ),
+                    ),
+                  );
+                  if (!mounted) return;
+                  _loadExpensePlans();
                 },
               ),
             ],
@@ -132,7 +200,9 @@ class _ExpensePlanCalendarScreenState extends State<ExpensePlanCalendarScreen> {
     final firstDay = DateTime(_selectedDate.year, _selectedDate.month, 1);
     final lastDay = DateTime(_selectedDate.year, _selectedDate.month + 1, 0);
     final daysInMonth = lastDay.day;
-    final startingDayOfWeek = firstDay.weekday;
+
+    // Convert Dart's weekday (1=Mon, 7=Sun) to calendar position (0=Sun, 1=Mon, ..., 6=Sat)
+    final startingWeekdayIndex = firstDay.weekday % 7;
 
     final datesWithPlans = provider.getDatesWithPlans();
 
@@ -164,7 +234,7 @@ class _ExpensePlanCalendarScreenState extends State<ExpensePlanCalendarScreen> {
           ),
           itemCount: 42, // 6 weeks * 7 days
           itemBuilder: (context, index) {
-            final day = index - startingDayOfWeek + 2;
+            final day = index - startingWeekdayIndex + 1;
 
             if (day < 1 || day > daysInMonth) {
               return const SizedBox.shrink();
@@ -172,8 +242,10 @@ class _ExpensePlanCalendarScreenState extends State<ExpensePlanCalendarScreen> {
 
             final date = DateTime(_selectedDate.year, _selectedDate.month, day);
             final isSelected = day == _selectedDate.day;
-            final hasPlans = datesWithPlans
-                .any((d) => d.year == date.year && d.month == date.month && d.day == date.day);
+            final hasPlans = datesWithPlans.any((d) =>
+                d.year == date.year &&
+                d.month == date.month &&
+                d.day == date.day);
             final isToday = DateTime.now().day == day &&
                 DateTime.now().month == _selectedDate.month &&
                 DateTime.now().year == _selectedDate.year;
@@ -202,8 +274,10 @@ class _ExpensePlanCalendarScreenState extends State<ExpensePlanCalendarScreen> {
                     Text(
                       '$day',
                       style: TextStyle(
-                        color: isSelected ? Colors.white : AppColors.textPrimary,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                        color:
+                            isSelected ? Colors.white : AppColors.textPrimary,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.w400,
                       ),
                     ),
                     if (hasPlans && !isSelected)
@@ -346,83 +420,187 @@ class _ExpensePlanCalendarScreenState extends State<ExpensePlanCalendarScreen> {
               return Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: plan.isCompleted
+                      ? AppColors.textHint.withValues(alpha: 0.05)
+                      : Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: AppColors.primaryLightest,
+                    color: plan.isCompleted
+                        ? AppColors.textHint.withValues(alpha: 0.3)
+                        : AppColors.primaryLightest,
                   ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Checkbox untuk mark as completed
+                        InkWell(
+                          onTap: () async {
+                            final success = await provider.toggleCompleted(
+                              plan.id,
+                              plan.isCompleted,
+                            );
+                            if (!context.mounted) return;
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  success
+                                      ? (plan.isCompleted
+                                          ? 'Rencana ditandai belum selesai'
+                                          : 'Rencana ditandai selesai ✓')
+                                      : (provider.errorMessage ??
+                                          'Gagal mengubah status rencana'),
+                                ),
+                                duration: const Duration(seconds: 2),
+                                backgroundColor: success
+                                    ? (plan.isCompleted
+                                        ? AppColors.textSecondary
+                                        : AppColors.success)
+                                    : AppColors.error,
+                              ),
+                            );
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.only(right: 12, top: 2),
+                            child: Icon(
+                              plan.isCompleted
+                                  ? Icons.check_circle
+                                  : Icons.radio_button_unchecked,
+                              color: plan.isCompleted
+                                  ? AppColors.success
+                                  : AppColors.textSecondary,
+                              size: 24,
+                            ),
+                          ),
+                        ),
+                        // Content
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                plan.title,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary,
-                                ),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      plan.title,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textPrimary,
+                                        decoration: plan.isCompleted
+                                            ? TextDecoration.lineThrough
+                                            : TextDecoration.none,
+                                        decorationColor:
+                                            AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        CurrencyFormatter.format(plan.amount),
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.primary,
+                                          decoration: plan.isCompleted
+                                              ? TextDecoration.lineThrough
+                                              : TextDecoration.none,
+                                          decorationColor:
+                                              AppColors.textSecondary,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 2),
+                                      InkWell(
+                                        onTap: () => _openEditExpensePlan(plan),
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: const Padding(
+                                          padding: EdgeInsets.all(4),
+                                          child: Icon(
+                                            Icons.edit_outlined,
+                                            size: 18,
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                      ),
+                                      InkWell(
+                                        onTap: () => _deleteExpensePlan(
+                                          provider,
+                                          plan.id,
+                                          plan.title,
+                                        ),
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: const Padding(
+                                          padding: EdgeInsets.all(4),
+                                          child: Icon(
+                                            Icons.delete_outline,
+                                            size: 18,
+                                            color: AppColors.error,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 plan.category,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
                                   color: AppColors.textSecondary,
+                                  decoration: plan.isCompleted
+                                      ? TextDecoration.lineThrough
+                                      : TextDecoration.none,
                                 ),
                               ),
+                              const SizedBox(height: 12),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Sumber: ${plan.paymentSource}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                  if (plan.reminderType != null)
+                                    Text(
+                                      'Reminder: ${plan.reminderType}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              if (plan.notes != null &&
+                                  plan.notes!.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  plan.notes!,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
-                        Text(
-                          CurrencyFormatter.format(plan.amount),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
-                          ),
-                        ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Sumber: ${plan.paymentSource}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        if (plan.reminderType != null)
-                          Text(
-                            'Reminder: ${plan.reminderType}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                      ],
-                    ),
-                    if (plan.notes != null && plan.notes!.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        plan.notes!,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               );

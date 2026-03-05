@@ -24,11 +24,15 @@ class UserRepository {
 
   Future<UserModel?> getUserByUsername(String username) async {
     try {
+      final cleanUsername = username.toLowerCase().trim();
+      
+      // Exact match - all usernames are now stored in lowercase
       final data = await _client
           .from('users')
           .select()
-          .eq('username', username)
+          .eq('username', cleanUsername)
           .maybeSingle();
+      
       if (data == null) return null;
       return UserModel.fromJson(data);
     } catch (e) {
@@ -46,7 +50,7 @@ class UserRepository {
     try {
       final updates = <String, dynamic>{};
       if (fullName != null) updates['full_name'] = fullName;
-      if (username != null) updates['username'] = username;
+      if (username != null) updates['username'] = username.toLowerCase().trim();
       if (phone != null) updates['phone'] = phone;
       if (avatarUrl != null) updates['avatar_url'] = avatarUrl;
 
@@ -91,26 +95,33 @@ class UserRepository {
 
   Future<bool> deleteAvatar({required String userId}) async {
     try {
-      // First, set avatar_url to null in database
-      await _client
-          .from('users')
-          .update({'avatar_url': null})
-          .eq('id', userId);
-
-      // Then delete all files in user's avatar folder
+      // First, delete all files in user's avatar folder from storage
       try {
         final files = await _client.storage
             .from('avatars')
             .list(path: userId);
         
         if (files.isNotEmpty) {
-          final filePaths = files.map((f) => '$userId/${f.name}').toList();
-          await _client.storage.from('avatars').remove(filePaths);
+          final filePaths = files
+              .where((f) => f.name.isNotEmpty)
+              .map((f) => '$userId/${f.name}')
+              .toList();
+          
+          if (filePaths.isNotEmpty) {
+            await _client.storage.from('avatars').remove(filePaths);
+          }
         }
-      } catch (e) {
-        // File deletion might fail but database update succeeded
-        // This is acceptable for the user experience
+      } catch (storageError) {
+        // Log storage error but continue with database cleanup
+        // This ensures avatar_url is set to null even if file deletion fails
+        // Note: File deletion might fail but database update should succeed
       }
+
+      // Then, set avatar_url to null in database
+      await _client
+          .from('users')
+          .update({'avatar_url': null})
+          .eq('id', userId);
 
       return true;
     } catch (e) {

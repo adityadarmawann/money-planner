@@ -27,6 +27,7 @@ import 'presentation/screens/home/main_screen.dart';
 import 'presentation/screens/profile/edit_profile_screen.dart';
 import 'presentation/screens/wallet/wallet_screen.dart';
 import 'presentation/screens/wallet/topup_screen.dart';
+import 'presentation/screens/wallet/topup_success_screen.dart';
 import 'presentation/screens/transfer/transfer_screen.dart';
 import 'presentation/screens/transfer/transfer_confirm_screen.dart';
 import 'presentation/screens/transfer/transfer_success_screen.dart';
@@ -119,6 +120,7 @@ class App extends StatelessWidget {
           AppRoutes.editProfile: (_) => const EditProfileScreen(),
           AppRoutes.wallet: (_) => const WalletScreen(),
           AppRoutes.topup: (_) => const TopupScreen(),
+          AppRoutes.topupSuccess: (_) => const TopupSuccessScreen(),
           AppRoutes.transfer: (_) => const TransferScreen(),
           AppRoutes.transferConfirm: (_) => const TransferConfirmScreen(),
           AppRoutes.transferSuccess: (_) => const TransferSuccessScreen(),

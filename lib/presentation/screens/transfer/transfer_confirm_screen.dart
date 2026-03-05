@@ -23,11 +23,20 @@ class TransferConfirmScreen extends StatefulWidget {
 class _TransferConfirmScreenState extends State<TransferConfirmScreen> {
   PaymentMethod _paymentMethod = PaymentMethod.wallet;
   int _selectedTenor = 3;
+  bool _payLaterLoaded = false;
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadPayLaterAccount());
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_payLaterLoaded) return;
+
+    _payLaterLoaded = true;
+    final args =
+        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+    final type = args['type'] as TransferType;
+    if (type == TransferType.qris) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadPayLaterAccount());
+    }
   }
 
   Future<void> _loadPayLaterAccount() async {
@@ -45,15 +54,15 @@ class _TransferConfirmScreenState extends State<TransferConfirmScreen> {
     final fee = (args['fee'] as double?) ?? 0;
     final note = args['note'] as String? ?? '';
 
+    final paylaterProvider = context.watch<PaylaterProvider>();
+    final canUsePayLater = type == TransferType.qris;
+
     final isLoading = context.watch<TransactionProvider>().isLoading ||
-        context.watch<PaylaterProvider>().isLoading;
+      (canUsePayLater && paylaterProvider.isLoading);
     final walletBalance = context.watch<WalletProvider>().balance;
-    final paylaterAccount = context.watch<PaylaterProvider>().account;
+    final paylaterAccount = paylaterProvider.account;
     final paylaterLimit = paylaterAccount?.remainingLimit ?? 0;
     final interestRate = paylaterAccount?.interestRate ?? 2.5;
-
-    // Bank transfer hanya bisa pakai wallet (withdrawal)
-    final canUsePayLater = type == TransferType.user || type == TransferType.qris;
 
     return Scaffold(
       appBar: AppBar(
@@ -162,7 +171,7 @@ class _TransferConfirmScreenState extends State<TransferConfirmScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    // Payment Method Selector (hanya untuk user transfer & QRIS)
+                    // Payment Method Selector
                     if (canUsePayLater)
                       PaymentMethodSelector(
                         selectedMethod: _paymentMethod,
@@ -215,33 +224,18 @@ class _TransferConfirmScreenState extends State<TransferConfirmScreen> {
     final fee = (args['fee'] as double?) ?? 0;
     bool success = false;
 
-    // Gunakan PayLater jika dipilih (hanya untuk QRIS dan User Transfer)
-    if (_paymentMethod == PaymentMethod.paylater) {
-      if (type == TransferType.qris) {
-        final merchantName = args['merchant'] as String? ?? 'Warung UMKM Indonesia';
-        success = await paylaterProvider.payWithPaylaterQris(
-          userId: args['senderId'] as String,
-          walletId: args['senderWalletId'] as String,
-          amount: amount,
-          tenorMonths: _selectedTenor,
-          merchantName: merchantName,
-          merchantCity: 'N/A',
-        );
-      } else if (type == TransferType.user) {
-        final recipient = args['recipient'] as UserModel;
-        success = await paylaterProvider.payWithPaylaterTransfer(
-          userId: args['senderId'] as String,
-          walletId: args['senderWalletId'] as String,
-          receiverId: args['receiverId'] as String,
-          receiverWalletId: args['receiverWalletId'] as String,
-          amount: amount,
-          tenorMonths: _selectedTenor,
-          receiverUsername: recipient.username,
-          receiverFullName: recipient.fullName,
-          note: args['note'] as String?,
-        );
-      }
-    } 
+    // PayLater hanya untuk QRIS
+    if (type == TransferType.qris && _paymentMethod == PaymentMethod.paylater) {
+      final merchantName = args['merchant'] as String? ?? 'Warung UMKM Indonesia';
+      success = await paylaterProvider.payWithPaylaterQris(
+        userId: args['senderId'] as String,
+        walletId: args['senderWalletId'] as String,
+        amount: amount,
+        tenorMonths: _selectedTenor,
+        merchantName: merchantName,
+        merchantCity: 'N/A',
+      );
+    }
     // Gunakan wallet (default)
     else {
       if (type == TransferType.user) {

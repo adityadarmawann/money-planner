@@ -91,9 +91,10 @@ class UserProvider extends ChangeNotifier {
 
     try {
       await _userRepository.deleteAvatar(userId: userId);
-      // Update user model to clear avatar_url
+      // Update user model to clear avatar_url immediately
       if (_user != null) {
         _user = _user!.copyWith(avatarUrl: null);
+        notifyListeners(); // Notify immediately to update UI
       }
       return true;
     } on AppException catch (e) {

@@ -4,6 +4,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/wallet_provider.dart';
 import '../../../providers/transaction_provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_routes.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/thousand_separator_formatter.dart';
@@ -79,7 +80,18 @@ class _TopupScreenState extends State<TopupScreen> {
     if (txSuccess) {
       // Refresh wallet balance in provider
       await walletProvider.loadWallet(userId);
-      if (mounted) {
+      if (!mounted) return;
+
+      final transaction = txProvider.lastTransaction;
+      if (transaction != null) {
+        // Navigate to success screen with transaction details
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.topupSuccess,
+          (route) => route.settings.name == AppRoutes.wallet,
+          arguments: transaction,
+        );
+      } else {
         showSpSnackbar(
           context,
           'Top up ${CurrencyFormatter.format(_finalAmount)} berhasil!',
