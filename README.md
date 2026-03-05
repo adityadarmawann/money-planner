@@ -3,9 +3,11 @@
 > Aplikasi mobile Flutter untuk perencanaan keuangan mahasiswa Indonesia.
 > Fitur lengkap: E-Wallet, Transfer, QRIS, Paylater, Financial Planner — semua dalam bahasa Indonesia dengan simulasi Rupiah.
 
+📚 **[Lihat Dokumentasi Developer](docs/01_INDEX.md)** - Panduan lengkap untuk developer
+
 ---
 
-## 📋 Daftar Isi
+## �📋 Daftar Isi
 
 - [Fitur Aplikasi](#-fitur-aplikasi)
 - [Tech Stack](#-tech-stack)
