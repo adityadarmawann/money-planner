@@ -157,6 +157,7 @@ class PaylaterRepository {
 
       await _client.from('transactions').insert({
         'sender_id': userId,
+        'receiver_id': userId,
         'wallet_id': walletId,
         'type': 'paylater_payment',
         'amount': bill.totalDue,
@@ -229,6 +230,7 @@ class PaylaterRepository {
 
       final txData = await _client.from('transactions').insert({
         'sender_id': userId,
+        'receiver_id': userId,
         'wallet_id': walletId,
         'type': 'qris_paylater',
         'amount': amount,

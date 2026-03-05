@@ -23,7 +23,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     {'label': 'Transfer', 'value': 'transfer_out'},
     {'label': 'Transfer Masuk', 'value': 'transfer_in'},
     {'label': 'Bank', 'value': 'bank_transfer'},
-    {'label': 'Paylater', 'value': 'paylater_disbursement'},
+    {'label': 'Paylater', 'value': 'paylater'},
   ];
 
   @override

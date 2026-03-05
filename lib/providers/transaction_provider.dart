@@ -10,6 +10,7 @@ class TransactionProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   TransactionModel? _lastTransaction;
+  String? _currentUserId;
 
   TransactionProvider({
     required TransactionRepository transactionRepository,
@@ -22,12 +23,33 @@ class TransactionProvider extends ChangeNotifier {
 
   List<TransactionModel> getFilteredTransactions(String? type) {
     if (type == null) return _transactions;
+    if (type == 'paylater') {
+      return _transactions
+          .where((t) => t.typeString == 'paylater_disbursement' || 
+                       t.typeString == 'paylater_payment')
+          .toList();
+    }
+    // Filter transfer masuk: hanya tampilkan jika user adalah penerima
+    if (type == 'transfer_in') {
+      return _transactions
+          .where((t) => t.typeString == 'transfer_in' && 
+                       t.receiverId == _currentUserId)
+          .toList();
+    }
+    // Filter transfer keluar: hanya tampilkan jika user adalah pengirim
+    if (type == 'transfer_out') {
+      return _transactions
+          .where((t) => t.typeString == 'transfer_out' && 
+                       t.senderId == _currentUserId)
+          .toList();
+    }
     return _transactions
         .where((t) => t.typeString == type)
         .toList();
   }
 
   Future<void> loadTransactions({required String userId, String? type}) async {
+    _currentUserId = userId;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
