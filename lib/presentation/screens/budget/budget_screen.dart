@@ -138,10 +138,10 @@ class _BudgetScreenState extends State<BudgetScreen> {
                     ),
                     const SizedBox(height: 18),
                   ],
-                  // Ringkasan Keuangan
+                  // Ringkasan Saku Anggaran
                   if (provider.budgets.isNotEmpty) ...[  
                     const Text(
-                      'Ringkasan Keuangan',
+                      'Ringkasan Saku Anggaran',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -217,7 +217,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
                     const SizedBox(height: 24),
                   ],
                   const Text(
-                    'Daftar Anggaran',
+                    'Saku Anggaran',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,

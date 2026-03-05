@@ -9,6 +9,7 @@ import '../../../core/constants/app_routes.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../widgets/home/balance_card.dart';
 import '../../widgets/home/quick_action_grid.dart';
+import '../../widgets/home/wallet_summary_chart.dart';
 import '../../widgets/transaction/transaction_tile.dart';
 import '../../widgets/common/sp_loading.dart';
 import '../../widgets/common/sp_card.dart';
@@ -117,6 +118,23 @@ class _HomeScreenState extends State<HomeScreen> {
                   Navigator.pushNamed(context, AppRoutes.expensePlanCalendar),
                 onPayLater: () =>
                   Navigator.pushNamed(context, AppRoutes.paylater),
+              ),
+            ),
+            const SizedBox(height: 28),
+            // Wallet Summary Chart
+            const Text(
+              'Ringkasan Dompet',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SpCard(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              child: WalletSummaryChart(
+                transactions: txProvider.transactions,
               ),
             ),
             const SizedBox(height: 28),
