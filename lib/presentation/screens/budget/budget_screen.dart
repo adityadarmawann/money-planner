@@ -151,15 +151,15 @@ class _BudgetScreenState extends State<BudgetScreen> {
                     const SizedBox(height: 12),
                     Builder(
                       builder: (context) {
-                        final now = DateTime.now();
-                        final currentBudget = provider.budgets.where(
-                          (b) => !b.startDate.isAfter(now) && !b.endDate.isBefore(now),
+                        // Summary should reflect all budget pockets, not a single active one.
+                        final totalIncome = provider.budgets.fold<double>(
+                          0,
+                          (sum, budget) => sum + budget.totalIncome,
                         );
-                        final budget = currentBudget.isNotEmpty
-                            ? currentBudget.first
-                            : provider.budgets.first;
-                        final totalIncome = budget.totalIncome;
-                        final totalExpense = budget.totalExpense;
+                        final totalExpense = provider.budgets.fold<double>(
+                          0,
+                          (sum, budget) => sum + budget.totalExpense,
+                        );
                         
                         return SpCard(
                           padding: const EdgeInsets.all(20),

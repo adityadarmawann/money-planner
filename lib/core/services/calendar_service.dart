@@ -7,11 +7,22 @@ class CalendarService {
   final DeviceCalendarPlugin _deviceCalendarPlugin = DeviceCalendarPlugin();
   String? _calendarId;
 
+  Future<bool> _isCalendarPermissionGranted() async {
+    final fullAccessStatus = await Permission.calendarFullAccess.status;
+    if (fullAccessStatus.isGranted) return true;
+
+    final writeOnlyStatus = await Permission.calendarWriteOnly.status;
+    return writeOnlyStatus.isGranted;
+  }
+
   /// Request calendar permission
   Future<bool> requestPermission() async {
     try {
-      final permission = await Permission.calendarFullAccess.request();
-      return permission.isGranted;
+      final fullAccessPermission = await Permission.calendarFullAccess.request();
+      if (fullAccessPermission.isGranted) return true;
+
+      final writeOnlyPermission = await Permission.calendarWriteOnly.request();
+      return writeOnlyPermission.isGranted;
     } catch (e) {
       return false;
     }
@@ -20,8 +31,7 @@ class CalendarService {
   /// Check if calendar permission is granted
   Future<bool> hasPermission() async {
     try {
-      final permission = await Permission.calendarFullAccess.status;
-      return permission.isGranted;
+      return await _isCalendarPermissionGranted();
     } catch (e) {
       return false;
     }
@@ -61,20 +71,23 @@ class CalendarService {
       final calendarId = await _getOrCreateCalendar();
       if (calendarId == null) return null;
 
+      final plannedDateTime = plan.plannedDateTime;
+
       // Calculate reminder time
       DateTime? reminderTime;
       if (plan.reminderType != null) {
         switch (plan.reminderType) {
           case 'h-1':
-            reminderTime = plan.plannedDate.subtract(const Duration(days: 1));
+            reminderTime = plannedDateTime.subtract(const Duration(days: 1));
             break;
           case 'h-3':
-            reminderTime = plan.plannedDate.subtract(const Duration(days: 3));
+            reminderTime = plannedDateTime.subtract(const Duration(hours: 3));
             break;
           case 'custom':
-            if (plan.customReminderHours != null) {
-              reminderTime = plan.plannedDate.subtract(
-                Duration(hours: plan.customReminderHours!),
+            final customMinutes = plan.effectiveCustomReminderMinutes;
+            if (customMinutes != null && customMinutes > 0) {
+              reminderTime = plannedDateTime.subtract(
+                Duration(minutes: customMinutes),
               );
             }
             break;
@@ -87,22 +100,9 @@ class CalendarService {
         eventId: plan.id, // Use expense plan ID as event ID
         title: '💸 ${plan.title}',
         description: _buildEventDescription(plan),
-        start: TZDateTime.from(
-          DateTime(
-            plan.plannedDate.year,
-            plan.plannedDate.month,
-            plan.plannedDate.day,
-            9, // Default start time 09:00
-          ),
-          _getLocation('Asia/Jakarta'),
-        ),
+        start: TZDateTime.from(plannedDateTime, _getLocation('Asia/Jakarta')),
         end: TZDateTime.from(
-          DateTime(
-            plan.plannedDate.year,
-            plan.plannedDate.month,
-            plan.plannedDate.day,
-            10, // End time 10:00
-          ),
+          plannedDateTime.add(const Duration(hours: 1)),
           _getLocation('Asia/Jakarta'),
         ),
         allDay: false,
@@ -110,9 +110,10 @@ class CalendarService {
 
       // Add reminder if set
       if (reminderTime != null) {
-        event.reminders = [
-          Reminder(minutes: plan.plannedDate.difference(reminderTime).inMinutes),
-        ];
+        final reminderMinutes = plannedDateTime.difference(reminderTime).inMinutes;
+        if (reminderMinutes > 0) {
+          event.reminders = [Reminder(minutes: reminderMinutes)];
+        }
       }
 
       // Create or update event
@@ -188,6 +189,7 @@ class CalendarService {
     buffer.writeln('Kategori: ${plan.category}');
     buffer.writeln('Jumlah: Rp ${plan.amount.toStringAsFixed(0)}');
     buffer.writeln('Sumber Pembayaran: ${plan.paymentSource}');
+    buffer.writeln('Waktu Pengeluaran: ${plan.plannedTime}');
     if (plan.notes != null && plan.notes!.isNotEmpty) {
       buffer.writeln('\nCatatan:');
       buffer.writeln(plan.notes);

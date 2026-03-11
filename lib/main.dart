@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 import 'app.dart';
 import 'core/config/env_config.dart';
 
@@ -29,6 +31,14 @@ Future<void> main() async {
   } catch (e) {
     // Fallback if locale initialization fails
     debugPrint('Failed to initialize id_ID locale: $e');
+  }
+
+  // Initialize timezone database once so calendar reminders use stable local timezone.
+  tz_data.initializeTimeZones();
+  try {
+    tz.setLocalLocation(tz.getLocation('Asia/Jakarta'));
+  } catch (_) {
+    // Keep default local timezone if named location is unavailable.
   }
 
   await Supabase.initialize(

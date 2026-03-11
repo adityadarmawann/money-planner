@@ -1,3 +1,5 @@
+import '../../core/utils/date_time_utils.dart';
+
 enum ItemType { income, expense }
 
 class BudgetItemModel {
@@ -46,8 +48,8 @@ class BudgetItemModel {
       'type': type == ItemType.income ? 'income' : 'expense',
       'amount': amount,
       'description': description,
-      'date': date.toIso8601String().split('T')[0],
-      'created_at': createdAt.toIso8601String(),
+      'date': DateTimeUtils.toLocalDateOnlyString(date),
+      'created_at': DateTimeUtils.toUtcIsoString(createdAt),
     };
   }
 }

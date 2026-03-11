@@ -1,3 +1,5 @@
+import '../../core/utils/date_time_utils.dart';
+
 class UserModel {
   static const Object _unset = Object();
 
@@ -46,8 +48,8 @@ class UserModel {
       'phone': phone,
       'avatar_url': avatarUrl,
       'is_verified': isVerified,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'created_at': DateTimeUtils.toUtcIsoString(createdAt),
+      'updated_at': DateTimeUtils.toUtcIsoString(updatedAt),
     };
   }
 

@@ -1,8 +1,10 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/expense_plan_provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/date_time_utils.dart';
 import '../../../core/utils/validators.dart';
 import '../../../data/models/expense_plan_model.dart';
 import '../../widgets/common/sp_button.dart';
@@ -28,13 +30,13 @@ class _ExpensePlanCreateScreenState extends State<ExpensePlanCreateScreen> {
   late TextEditingController _titleController;
   late TextEditingController _amountController;
   late TextEditingController _notesController;
-  late TextEditingController _customReminderController;
 
   DateTime? _selectedDate;
+  TimeOfDay _selectedExpenseTime = const TimeOfDay(hour: 9, minute: 0);
   String? _selectedCategory;
   String? _selectedPaymentSource;
   String? _selectedReminder;
-  int? _customReminderHours;
+  int? _customReminderMinutes;
 
   final _formKey = GlobalKey<FormState>();
 
@@ -45,15 +47,14 @@ class _ExpensePlanCreateScreenState extends State<ExpensePlanCreateScreen> {
     _amountController =
         TextEditingController(text: widget.plan?.amount.toString() ?? '');
     _notesController = TextEditingController(text: widget.plan?.notes ?? '');
-    _customReminderController = TextEditingController(
-        text: widget.plan?.customReminderHours?.toString() ?? '');
 
     _selectedDate = widget.plan?.plannedDate ?? widget.initialDate ?? DateTime.now();
+    _selectedExpenseTime = _parseTime(widget.plan?.plannedTime ?? '09:00');
     _selectedCategory = widget.plan?.category ?? ExpenseCategory.makanan;
     _selectedPaymentSource =
         widget.plan?.paymentSource ?? PaymentSource.studentPlanWallet;
     _selectedReminder = widget.plan?.reminderType;
-    _customReminderHours = widget.plan?.customReminderHours;
+    _customReminderMinutes = widget.plan?.effectiveCustomReminderMinutes;
   }
 
   @override
@@ -61,7 +62,6 @@ class _ExpensePlanCreateScreenState extends State<ExpensePlanCreateScreen> {
     _titleController.dispose();
     _amountController.dispose();
     _notesController.dispose();
-    _customReminderController.dispose();
     super.dispose();
   }
 
@@ -85,6 +85,47 @@ class _ExpensePlanCreateScreenState extends State<ExpensePlanCreateScreen> {
     }
   }
 
+  Future<void> _selectExpenseTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _selectedExpenseTime,
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() => _selectedExpenseTime = picked);
+    }
+  }
+
+  TimeOfDay _parseTime(String value) {
+    final parts = value.split(':');
+    if (parts.length != 2) return const TimeOfDay(hour: 9, minute: 0);
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) {
+      return const TimeOfDay(hour: 9, minute: 0);
+    }
+    return TimeOfDay(hour: hour.clamp(0, 23), minute: minute.clamp(0, 59));
+  }
+
+  String _formatTimeOfDay(TimeOfDay time) {
+    final hh = time.hour.toString().padLeft(2, '0');
+    final mm = time.minute.toString().padLeft(2, '0');
+    return '$hh:$mm';
+  }
+
+  String _formatReminderDuration(int? totalMinutes) {
+    if (totalMinutes == null || totalMinutes <= 0) return 'Ketuk untuk memilih';
+    final hours = totalMinutes ~/ 60;
+    final minutes = totalMinutes % 60;
+    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')} sebelum pengeluaran';
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedDate == null) {
@@ -102,13 +143,13 @@ class _ExpensePlanCreateScreenState extends State<ExpensePlanCreateScreen> {
     }
 
     if (_selectedReminder == ReminderType.custom &&
-        _customReminderHours == null) {
-      showSpSnackbar(context, 'Input jam reminder kustom', isError: true);
+        _customReminderMinutes == null) {
+      showSpSnackbar(context, 'Input durasi reminder kustom', isError: true);
       return;
     }
     if (_selectedReminder == ReminderType.custom &&
-        (_customReminderHours ?? 0) <= 0) {
-      showSpSnackbar(context, 'Jam reminder harus lebih dari 0', isError: true);
+        (_customReminderMinutes ?? 0) <= 0) {
+      showSpSnackbar(context, 'Durasi reminder harus lebih dari 00:00', isError: true);
       return;
     }
 
@@ -133,11 +174,12 @@ class _ExpensePlanCreateScreenState extends State<ExpensePlanCreateScreen> {
         title: _titleController.text.trim(),
         amount: parsedAmount,
         plannedDate: _selectedDate!,
+        plannedTime: _formatTimeOfDay(_selectedExpenseTime),
         category: _selectedCategory!,
         paymentSource: _selectedPaymentSource!,
         reminderType: _selectedReminder,
-        customReminderHours: _selectedReminder == ReminderType.custom
-            ? _customReminderHours
+        customReminderMinutes: _selectedReminder == ReminderType.custom
+            ? _customReminderMinutes
             : null,
         notes: _notesController.text.trim().isEmpty
             ? null
@@ -149,12 +191,16 @@ class _ExpensePlanCreateScreenState extends State<ExpensePlanCreateScreen> {
         {
           'title': _titleController.text.trim(),
           'amount': parsedAmount,
-          'planned_date': _selectedDate!.toIso8601String().split('T')[0],
+          'planned_date': DateTimeUtils.toLocalDateOnlyString(_selectedDate!),
+          'planned_time': _formatTimeOfDay(_selectedExpenseTime),
           'category': _selectedCategory!,
           'payment_source': _selectedPaymentSource!,
           'reminder_type': _selectedReminder,
-          'custom_reminder_hours': _selectedReminder == ReminderType.custom
-              ? _customReminderHours
+          'custom_reminder_minutes': _selectedReminder == ReminderType.custom
+              ? _customReminderMinutes
+              : null,
+          'custom_reminder_hours': _selectedReminder == ReminderType.custom && _customReminderMinutes != null
+              ? (_customReminderMinutes! / 60).ceil()
               : null,
           'notes': _notesController.text.trim().isEmpty
               ? null
@@ -235,6 +281,10 @@ class _ExpensePlanCreateScreenState extends State<ExpensePlanCreateScreen> {
               _buildDatePicker(),
               const SizedBox(height: 16),
 
+              // Time Picker
+              _buildTimePicker(),
+              const SizedBox(height: 16),
+
               // Category
               _buildCategoryDropdown(),
               const SizedBox(height: 16),
@@ -312,6 +362,46 @@ class _ExpensePlanCreateScreenState extends State<ExpensePlanCreateScreen> {
               ],
             ),
             const Icon(Icons.calendar_today, color: AppColors.primary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimePicker() {
+    return InkWell(
+      onTap: _selectExpenseTime,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.primaryLightest),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Jam Pengeluaran',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _formatTimeOfDay(_selectedExpenseTime),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+            const Icon(Icons.access_time, color: AppColors.primary),
           ],
         ),
       ),
@@ -403,6 +493,101 @@ class _ExpensePlanCreateScreenState extends State<ExpensePlanCreateScreen> {
     );
   }
 
+  Future<void> _selectCustomReminderDuration() async {
+    int tempHours = (_customReminderMinutes ?? 0) ~/ 60;
+    int tempMinutes = (_customReminderMinutes ?? 0) % 60;
+
+    await showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return SizedBox(
+          height: 320,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Batal'),
+                    ),
+                    const Text(
+                      'Durasi Pengingat',
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() =>
+                            _customReminderMinutes = (tempHours * 60) + tempMinutes);
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Selesai'),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 100,
+                      child: CupertinoPicker(
+                        itemExtent: 48,
+                        scrollController: FixedExtentScrollController(
+                          initialItem: tempHours,
+                        ),
+                        onSelectedItemChanged: (i) => tempHours = i,
+                        children: List.generate(
+                          73,
+                          (i) => Center(
+                            child: Text(
+                              i.toString().padLeft(2, '0'),
+                              style: const TextStyle(fontSize: 20),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(':', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+                    ),
+                    SizedBox(
+                      width: 100,
+                      child: CupertinoPicker(
+                        itemExtent: 48,
+                        scrollController: FixedExtentScrollController(
+                          initialItem: tempMinutes ~/ 5,
+                        ),
+                        onSelectedItemChanged: (i) => tempMinutes = i * 5,
+                        children: List.generate(
+                          12,
+                          (i) => Center(
+                            child: Text(
+                              (i * 5).toString().padLeft(2, '0'),
+                              style: const TextStyle(fontSize: 20),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildReminderSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -449,8 +634,7 @@ class _ExpensePlanCreateScreenState extends State<ExpensePlanCreateScreen> {
               setState(() {
                 _selectedReminder = value;
                 if (_selectedReminder != ReminderType.custom) {
-                  _customReminderHours = null;
-                  _customReminderController.clear();
+                  _customReminderMinutes = null;
                 }
               });
             },
@@ -458,24 +642,40 @@ class _ExpensePlanCreateScreenState extends State<ExpensePlanCreateScreen> {
         ),
         if (_selectedReminder == ReminderType.custom) ...[
           const SizedBox(height: 12),
-          SpTextField(
-            label: 'Jam Pengingat (sebelum pengeluaran)',
-            hint: '3',
-            controller: _customReminderController,
-            keyboardType: TextInputType.number,
-            onChanged: (value) {
-              setState(() {
-                _customReminderHours = int.tryParse(value);
-              });
-            },
-            validator: (v) {
-              if (_selectedReminder == ReminderType.custom &&
-                  (v == null || v.isEmpty)) {
-                return 'Masukkan jam pengingat';
-              }
-              return null;
-            },
-            suffix: const Text('jam'),
+          GestureDetector(
+            onTap: _selectCustomReminderDuration,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                border: Border.all(color: AppColors.primaryLightest),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Durasi Pengingat (jam:menit sebelum pengeluaran)',
+                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _formatReminderDuration(_customReminderMinutes),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: _customReminderMinutes != null
+                              ? AppColors.textPrimary
+                              : AppColors.textHint,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Icon(Icons.access_time, color: AppColors.textHint),
+                ],
+              ),
+            ),
           ),
         ],
       ],

@@ -93,6 +93,18 @@ class TransactionRepository {
     String? note,
   }) async {
     try {
+      if (senderId == receiverId) {
+        throw const AppException(
+          message: 'Tidak bisa transfer ke akun sendiri',
+        );
+      }
+
+      if (senderWalletId == receiverWalletId) {
+        throw const AppException(
+          message: 'Wallet tujuan tidak valid',
+        );
+      }
+
       // Execute atomic wallet transfer via RPC (bypasses RLS)
       final walletIds = await _walletRepository.executeAtomicTransfer(
         senderId: senderId,

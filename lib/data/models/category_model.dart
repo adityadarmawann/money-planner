@@ -1,3 +1,5 @@
+import '../../core/utils/date_time_utils.dart';
+
 enum CategoryType { income, expense }
 
 class CategoryModel {
@@ -43,7 +45,7 @@ class CategoryModel {
       'color': color,
       'type': type == CategoryType.income ? 'income' : 'expense',
       'is_default': isDefault,
-      'created_at': createdAt.toIso8601String(),
+      'created_at': DateTimeUtils.toUtcIsoString(createdAt),
     };
   }
 }

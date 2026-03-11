@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/expense_plan_model.dart';
+import '../../core/utils/date_time_utils.dart';
 
 class ExpensePlanRepository {
   final SupabaseClient _client;
@@ -37,8 +38,8 @@ class ExpensePlanRepository {
           .from('expense_plans')
           .select()
           .eq('user_id', userId)
-          .gte('planned_date', startDate.toIso8601String().split('T')[0])
-          .lte('planned_date', endDate.toIso8601String().split('T')[0])
+          .gte('planned_date', DateTimeUtils.toLocalDateOnlyString(startDate))
+          .lte('planned_date', DateTimeUtils.toLocalDateOnlyString(endDate))
           .order('planned_date', ascending: true);
 
       return (response as List)
@@ -55,7 +56,7 @@ class ExpensePlanRepository {
     DateTime date,
   ) async {
     try {
-      final dateStr = date.toIso8601String().split('T')[0];
+      final dateStr = DateTimeUtils.toLocalDateOnlyString(date);
       final response = await _client
           .from('expense_plans')
           .select()
@@ -77,10 +78,11 @@ class ExpensePlanRepository {
     required String title,
     required double amount,
     required DateTime plannedDate,
+    required String plannedTime,
     required String category,
     required String paymentSource,
     String? reminderType,
-    int? customReminderHours,
+    int? customReminderMinutes,
     String? notes,
   }) async {
     try {
@@ -90,14 +92,17 @@ class ExpensePlanRepository {
             'user_id': userId,
             'title': title,
             'amount': amount,
-            'planned_date': plannedDate.toIso8601String().split('T')[0],
+            'planned_date': DateTimeUtils.toLocalDateOnlyString(plannedDate),
+            'planned_time': plannedTime,
             'category': category,
             'payment_source': paymentSource,
             'reminder_type': reminderType,
-            'custom_reminder_hours': customReminderHours,
+            'custom_reminder_minutes': customReminderMinutes,
+            'custom_reminder_hours':
+                customReminderMinutes != null ? (customReminderMinutes / 60).ceil() : null,
             'notes': notes,
-            'created_at': DateTime.now().toIso8601String(),
-            'updated_at': DateTime.now().toIso8601String(),
+            'created_at': DateTimeUtils.toUtcIsoString(DateTime.now()),
+            'updated_at': DateTimeUtils.toUtcIsoString(DateTime.now()),
           })
           .select()
           .single();
@@ -118,7 +123,7 @@ class ExpensePlanRepository {
           .from('expense_plans')
           .update({
             ...updates,
-            'updated_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTimeUtils.toUtcIsoString(DateTime.now()),
           })
           .eq('id', id)
           .select()
@@ -155,8 +160,8 @@ class ExpensePlanRepository {
           .from('expense_plans')
           .update({
             'is_completed': true,
-            'completed_at': DateTime.now().toIso8601String(),
-            'updated_at': DateTime.now().toIso8601String(),
+            'completed_at': DateTimeUtils.toUtcIsoString(DateTime.now()),
+            'updated_at': DateTimeUtils.toUtcIsoString(DateTime.now()),
           })
           .eq('id', id)
           .select()
@@ -176,8 +181,8 @@ class ExpensePlanRepository {
           .update({
             'is_completed': !isCompleted,
             'completed_at':
-                !isCompleted ? DateTime.now().toIso8601String() : null,
-            'updated_at': DateTime.now().toIso8601String(),
+                !isCompleted ? DateTimeUtils.toUtcIsoString(DateTime.now()) : null,
+            'updated_at': DateTimeUtils.toUtcIsoString(DateTime.now()),
           })
           .eq('id', id)
           .select()
@@ -192,7 +197,7 @@ class ExpensePlanRepository {
   // Get summary untuk tanggal tertentu
   Future<double> getTotalAmountForDate(String userId, DateTime date) async {
     try {
-      final dateStr = date.toIso8601String().split('T')[0];
+      final dateStr = DateTimeUtils.toLocalDateOnlyString(date);
       final response = await _client
           .from('expense_plans')
           .select('amount')
@@ -215,8 +220,8 @@ class ExpensePlanRepository {
       String userId, DateTime startDate) async {
     try {
       final endDate = startDate.add(const Duration(days: 7));
-      final startStr = startDate.toIso8601String().split('T')[0];
-      final endStr = endDate.toIso8601String().split('T')[0];
+      final startStr = DateTimeUtils.toLocalDateOnlyString(startDate);
+      final endStr = DateTimeUtils.toLocalDateOnlyString(endDate);
 
       final response = await _client
           .from('expense_plans')
@@ -245,8 +250,8 @@ class ExpensePlanRepository {
     try {
       final startDate = DateTime(year, month, 1);
       final endDate = DateTime(year, month + 1, 0);
-      final startStr = startDate.toIso8601String().split('T')[0];
-      final endStr = endDate.toIso8601String().split('T')[0];
+      final startStr = DateTimeUtils.toLocalDateOnlyString(startDate);
+      final endStr = DateTimeUtils.toLocalDateOnlyString(endDate);
 
       final response = await _client
           .from('expense_plans')

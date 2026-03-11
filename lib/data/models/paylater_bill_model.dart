@@ -1,3 +1,5 @@
+import '../../core/utils/date_time_utils.dart';
+
 enum BillStatus { active, paid, overdue, cancelled }
 
 class PaylaterBillModel {
@@ -102,11 +104,11 @@ class PaylaterBillModel {
       'late_fee_amount': lateFeeAmount,
       'total_due': totalDue,
       'tenor_months': tenorMonths,
-      'due_date': dueDate.toIso8601String().split('T')[0],
-      'paid_at': paidAt?.toIso8601String(),
+      'due_date': DateTimeUtils.toLocalDateOnlyString(dueDate),
+      'paid_at': DateTimeUtils.toUtcIsoStringOrNull(paidAt),
       'status': status.name,
       'transaction_id': transactionId,
-      'created_at': createdAt.toIso8601String(),
+      'created_at': DateTimeUtils.toUtcIsoString(createdAt),
     };
   }
 }

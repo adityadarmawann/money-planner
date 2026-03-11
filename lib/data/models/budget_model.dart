@@ -1,3 +1,5 @@
+import '../../core/utils/date_time_utils.dart';
+
 enum PeriodType { weekly, monthly, custom }
 
 class BudgetModel {
@@ -84,12 +86,12 @@ class BudgetModel {
       'user_id': userId,
       'name': name,
       'period_type': periodTypeString,
-      'start_date': startDate.toIso8601String().split('T')[0],
-      'end_date': endDate.toIso8601String().split('T')[0],
+      'start_date': DateTimeUtils.toLocalDateOnlyString(startDate),
+      'end_date': DateTimeUtils.toLocalDateOnlyString(endDate),
       'total_income': totalIncome,
       'total_expense': totalExpense,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'created_at': DateTimeUtils.toUtcIsoString(createdAt),
+      'updated_at': DateTimeUtils.toUtcIsoString(updatedAt),
     };
   }
 

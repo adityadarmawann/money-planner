@@ -126,7 +126,7 @@ class TopupSuccessScreen extends StatelessWidget {
                               ),
                               Text(
                                 DateFormat('dd MMM yyyy, HH:mm')
-                                    .format(args.createdAt),
+                                    .format(args.createdAt.toLocal()),
                                 style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
@@ -174,7 +174,7 @@ class TopupSuccessScreen extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () => Navigator.of(context)
-                      .pushNamedAndRemoveUntil(AppRoutes.wallet, (_) => false),
+                      .pushNamedAndRemoveUntil(AppRoutes.home, (_) => false),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -183,7 +183,7 @@ class TopupSuccessScreen extends StatelessWidget {
                     ),
                   ),
                   child: const Text(
-                    'Kembali ke Dompet',
+                    'Kembali ke Beranda',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,

@@ -3,6 +3,7 @@ import '../models/budget_model.dart';
 import '../models/budget_item_model.dart';
 import '../models/category_model.dart';
 import '../../core/errors/app_exception.dart';
+import '../../core/utils/date_time_utils.dart';
 
 class BudgetRepository {
   final SupabaseClient _client;
@@ -54,8 +55,8 @@ class BudgetRepository {
         'user_id': userId,
         'name': name,
         'period_type': periodTypeStr,
-        'start_date': startDate.toIso8601String().split('T')[0],
-        'end_date': endDate.toIso8601String().split('T')[0],
+        'start_date': DateTimeUtils.toLocalDateOnlyString(startDate),
+        'end_date': DateTimeUtils.toLocalDateOnlyString(endDate),
         'total_income': 0,
         'total_expense': 0,
       }).select().single();
@@ -103,7 +104,7 @@ class BudgetRepository {
         'type': type == ItemType.income ? 'income' : 'expense',
         'amount': amount,
         'description': description,
-        'date': date.toIso8601String().split('T')[0],
+        'date': DateTimeUtils.toLocalDateOnlyString(date),
       }).select().single();
 
       // Update budget totals

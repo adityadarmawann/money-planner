@@ -21,6 +21,18 @@ class TransactionProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   TransactionModel? get lastTransaction => _lastTransaction;
 
+  bool _isTransactionVisibleForUser(TransactionModel tx, String userId) {
+    if (tx.typeString == 'transfer_in') {
+      return tx.receiverId == userId;
+    }
+
+    if (tx.typeString == 'transfer_out') {
+      return tx.senderId == userId;
+    }
+
+    return tx.senderId == userId || tx.receiverId == userId;
+  }
+
   List<TransactionModel> getFilteredTransactions(String? type) {
     if (type == null) return _transactions;
     if (type == 'paylater') {
@@ -55,10 +67,15 @@ class TransactionProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _transactions = await _transactionRepository.getTransactions(
+      final fetched = await _transactionRepository.getTransactions(
         userId: userId,
         type: type,
       );
+
+      // Keep timeline consistent with user perspective.
+      _transactions = fetched
+          .where((tx) => _isTransactionVisibleForUser(tx, userId))
+          .toList();
     } on AppException catch (e) {
       _errorMessage = e.message;
     } finally {

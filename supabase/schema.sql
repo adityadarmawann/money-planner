@@ -211,10 +211,12 @@ CREATE TABLE public.expense_plans (
   title VARCHAR(255) NOT NULL,
   amount DECIMAL(15,2) NOT NULL CHECK (amount > 0),
   planned_date DATE NOT NULL,
+  planned_time TIME WITHOUT TIME ZONE DEFAULT TIME '09:00:00',
   category VARCHAR(100) NOT NULL,
   payment_source VARCHAR(100) NOT NULL,
   reminder_type VARCHAR(20), -- 'h-1', 'h-3', 'custom', null
   custom_reminder_hours INTEGER,
+  custom_reminder_minutes INTEGER CHECK (custom_reminder_minutes IS NULL OR custom_reminder_minutes > 0),
   is_completed BOOLEAN DEFAULT FALSE,
   completed_at TIMESTAMPTZ,
   notes TEXT,

@@ -239,10 +239,21 @@ class _TransferConfirmScreenState extends State<TransferConfirmScreen> {
     // Gunakan wallet (default)
     else {
       if (type == TransferType.user) {
+        final senderId = args['senderId'] as String;
+        final receiverId = args['receiverId'] as String;
+        if (senderId == receiverId) {
+          showSpSnackbar(
+            context,
+            'Tidak bisa transfer ke akun sendiri',
+            isError: true,
+          );
+          return;
+        }
+
         success = await txProvider.transfer(
-          senderId: args['senderId'] as String,
+          senderId: senderId,
           senderWalletId: args['senderWalletId'] as String,
-          receiverId: args['receiverId'] as String,
+          receiverId: receiverId,
           receiverWalletId: args['receiverWalletId'] as String,
           amount: amount,
           note: args['note'] as String?,

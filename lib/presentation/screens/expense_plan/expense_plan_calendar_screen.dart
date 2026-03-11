@@ -112,6 +112,24 @@ class _ExpensePlanCalendarScreenState extends State<ExpensePlanCalendarScreen> {
     _loadExpensePlans();
   }
 
+  String _formatReminderLabel(ExpensePlan plan) {
+    if (plan.reminderType == null) return 'Tanpa pengingat';
+    switch (plan.reminderType) {
+      case ReminderType.h1:
+        return '1 hari sebelumnya';
+      case ReminderType.h3:
+        return '3 jam sebelumnya';
+      case ReminderType.custom:
+        final minutes = plan.effectiveCustomReminderMinutes;
+        if (minutes == null || minutes <= 0) return 'Custom';
+        final hours = minutes ~/ 60;
+        final remainingMinutes = minutes % 60;
+        return '${hours.toString().padLeft(2, '0')}:${remainingMinutes.toString().padLeft(2, '0')} sebelumnya';
+      default:
+        return plan.reminderType!;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final expensePlanProvider = context.watch<ExpensePlanProvider>();
@@ -567,22 +585,33 @@ class _ExpensePlanCalendarScreenState extends State<ExpensePlanCalendarScreen> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
+                                  Expanded(
+                                    child: Text(
+                                      'Sumber: ${plan.paymentSource}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
                                   Text(
-                                    'Sumber: ${plan.paymentSource}',
+                                    'Jam: ${plan.plannedTime}',
                                     style: const TextStyle(
                                       fontSize: 12,
                                       color: AppColors.textSecondary,
                                     ),
                                   ),
-                                  if (plan.reminderType != null)
-                                    Text(
-                                      'Reminder: ${plan.reminderType}',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.primary,
-                                      ),
-                                    ),
                                 ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Pengingat: ${_formatReminderLabel(plan)}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.primary,
+                                ),
                               ),
                               if (plan.notes != null &&
                                   plan.notes!.isNotEmpty) ...[

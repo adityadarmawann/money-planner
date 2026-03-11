@@ -1,3 +1,5 @@
+import '../../core/utils/date_time_utils.dart';
+
 enum TransactionType {
   topup,
   transferIn,
@@ -149,7 +151,7 @@ class TransactionModel {
       'note': note,
       'ref_code': refCode,
       'metadata': metadata,
-      'created_at': createdAt.toIso8601String(),
+      'created_at': DateTimeUtils.toUtcIsoString(createdAt),
     };
   }
 }

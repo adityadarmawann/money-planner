@@ -25,13 +25,20 @@ class UserRepository {
   Future<UserModel?> getUserByUsername(String username) async {
     try {
       final cleanUsername = username.toLowerCase().trim();
+      final currentUserId = _client.auth.currentUser?.id;
       
       // Exact match - all usernames are now stored in lowercase
-      final data = await _client
+      var query = _client
           .from('users')
           .select()
-          .eq('username', cleanUsername)
-          .maybeSingle();
+          .eq('username', cleanUsername);
+
+      // Prevent selecting current user as transfer recipient.
+      if (currentUserId != null) {
+        query = query.neq('id', currentUserId);
+      }
+
+      final data = await query.maybeSingle();
       
       if (data == null) return null;
       return UserModel.fromJson(data);

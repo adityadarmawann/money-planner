@@ -1,3 +1,5 @@
+import '../../core/utils/date_time_utils.dart';
+
 class WalletModel {
   final String id;
   final String userId;
@@ -36,8 +38,8 @@ class WalletModel {
       'balance': balance,
       'currency': currency,
       'is_active': isActive,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'created_at': DateTimeUtils.toUtcIsoString(createdAt),
+      'updated_at': DateTimeUtils.toUtcIsoString(updatedAt),
     };
   }
 

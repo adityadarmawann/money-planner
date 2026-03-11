@@ -3,6 +3,7 @@ import '../models/paylater_account_model.dart';
 import '../models/paylater_bill_model.dart';
 import '../models/transaction_model.dart';
 import '../../core/errors/app_exception.dart';
+import '../../core/utils/date_time_utils.dart';
 import 'wallet_repository.dart';
 
 class PaylaterRepository {
@@ -109,7 +110,7 @@ class PaylaterRepository {
         'interest_amount': interestAmount,
         'total_due': totalDue,
         'tenor_months': tenorMonths,
-        'due_date': dueDate.toIso8601String().split('T')[0],
+        'due_date': DateTimeUtils.toLocalDateOnlyString(dueDate),
         'status': 'active',
         'transaction_id': txData['id'],
       }).select().single();
@@ -172,7 +173,7 @@ class PaylaterRepository {
           .from('paylater_bills')
           .update({
             'status': 'paid',
-            'paid_at': DateTime.now().toIso8601String(),
+            'paid_at': DateTimeUtils.toUtcIsoString(DateTime.now()),
           })
           .eq('id', billId)
           .select()
@@ -253,7 +254,7 @@ class PaylaterRepository {
         'interest_amount': interestAmount,
         'total_due': totalDue,
         'tenor_months': tenorMonths,
-        'due_date': dueDate.toIso8601String().split('T')[0],
+        'due_date': DateTimeUtils.toLocalDateOnlyString(dueDate),
         'status': 'active',
         'transaction_id': txData['id'],
         'payment_type': 'qris',
@@ -344,7 +345,7 @@ class PaylaterRepository {
         'interest_amount': interestAmount,
         'total_due': totalDue,
         'tenor_months': tenorMonths,
-        'due_date': dueDate.toIso8601String().split('T')[0],
+        'due_date': DateTimeUtils.toLocalDateOnlyString(dueDate),
         'status': 'active',
         'transaction_id': txData['id'],
         'payment_type': 'transfer',
@@ -429,7 +430,7 @@ class PaylaterRepository {
         'interest_amount': interestAmount,
         'total_due': totalDue + (fee * (account.interestRate / 100) * tenorMonths),
         'tenor_months': tenorMonths,
-        'due_date': dueDate.toIso8601String().split('T')[0],
+        'due_date': DateTimeUtils.toLocalDateOnlyString(dueDate),
         'status': 'active',
         'transaction_id': txData['id'],
         'payment_type': 'bank_transfer',

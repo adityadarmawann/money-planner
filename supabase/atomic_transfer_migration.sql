@@ -33,6 +33,20 @@ BEGIN
     RAISE EXCEPTION 'You can only transfer from your own wallet';
   END IF;
 
+  -- Prevent self transfer at database level.
+  IF sender_user_id = receiver_user_id THEN
+    RAISE EXCEPTION 'Cannot transfer to self';
+  END IF;
+
+  -- Basic input validation
+  IF transfer_amount IS NULL OR transfer_amount <= 0 THEN
+    RAISE EXCEPTION 'Transfer amount must be greater than zero';
+  END IF;
+
+  IF transfer_fee IS NULL OR transfer_fee < 0 THEN
+    RAISE EXCEPTION 'Transfer fee cannot be negative';
+  END IF;
+
   -- Calculate total deduction
   total_deduct := transfer_amount + transfer_fee;
 
@@ -59,6 +73,10 @@ BEGIN
 
   IF receiver_wallet_id IS NULL THEN
     RAISE EXCEPTION 'Receiver wallet not found';
+  END IF;
+
+  IF sender_wallet_id = receiver_wallet_id THEN
+    RAISE EXCEPTION 'Receiver wallet must be different from sender wallet';
   END IF;
 
   -- Deduct from sender

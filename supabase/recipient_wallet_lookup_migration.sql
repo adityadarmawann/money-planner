@@ -18,6 +18,11 @@ BEGIN
     RETURN NULL;
   END IF;
 
+  -- Sender cannot resolve their own wallet as transfer recipient.
+  IF auth.uid() = target_user_id THEN
+    RETURN NULL;
+  END IF;
+
   SELECT w.id
   INTO recipient_wallet_id
   FROM public.wallets w

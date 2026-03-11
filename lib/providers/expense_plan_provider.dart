@@ -62,10 +62,11 @@ class ExpensePlanProvider extends ChangeNotifier {
     required String title,
     required double amount,
     required DateTime plannedDate,
+    required String plannedTime,
     required String category,
     required String paymentSource,
     String? reminderType,
-    int? customReminderHours,
+    int? customReminderMinutes,
     String? notes,
   }) async {
     _isLoading = true;
@@ -79,10 +80,11 @@ class ExpensePlanProvider extends ChangeNotifier {
         title: title,
         amount: amount,
         plannedDate: plannedDate,
+        plannedTime: plannedTime,
         category: category,
         paymentSource: paymentSource,
         reminderType: reminderType,
-        customReminderHours: customReminderHours,
+        customReminderMinutes: customReminderMinutes,
         notes: notes,
       );
 
